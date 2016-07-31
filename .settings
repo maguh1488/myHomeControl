@@ -1,8 +1,6 @@
 [Breakpoints]
-Count=3
-Breakpoint[1]="FMain.1556"
-Breakpoint[2]="FMain.1575"
-Breakpoint[3]="FMain.1592"
+Count=1
+Breakpoint[1]="FMain.1592"
 
 [DebugWindow]
 Count=0
@@ -70,7 +68,7 @@ Path="mini-Webserver_GPIO_FUNK.gambas"
 [OpenFile]
 Active=2
 File[1]=".src/FMain.form"
-File[2]=".src/FMain.class:0.1916"
+File[2]=".src/FMain.class:97.1650"
 Fold[2]=[403,500,736]
 Count=4
 File[3]=".src/Raumliste.form"

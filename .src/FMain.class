@@ -969,7 +969,7 @@ Public Sub btn_Teilnehmer_Add_Click()
      Else If Radio_SendeModus_IO_EXPANDER.Value = True Then
       'IO_Expander
       sIO_ExpanderNr = Mid(Combo_IO_EXPANDER.Text, 6, Len(Combo_IO_EXPANDER.text))
-      TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Pi-Ausgang", "IO-EXPANDER:" & txt_FUNK_HAUSCODE.Text & ":" & txt_FUNK_KANAL.Text,, RoomID.text & "-" & DeviceID.text)
+      TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Pi-Ausgang", "IO-EXPANDER:" & Combo_IO_EXPANDER_ADRESSE.Text & " Kanal:" & txt_IO_EXPANDER_KANAL.Text,, RoomID.text & "-" & DeviceID.text)
     End If
 End
 
