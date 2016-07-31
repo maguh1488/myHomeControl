@@ -1,0 +1,23 @@
+# Gambas Project File 3.0
+# Compiled with Gambas 3.8.4
+Title=mini-Webserver GPIO FUNK IO-Expander
+Startup=FMain
+Version=0.0.10
+Component=gb.image
+Component=gb.cairo
+Component=gb.gui.qt
+Component=gb.form
+Component=gb.clipper
+Component=gb.complex
+Component=gb.compress
+Component=gb.compress.bzlib2
+Component=gb.net
+Component=gb.net.curl
+Component=gb.mime
+Component=gb.net.pop3
+Description="Webserver unterbau mit der möglichkeit zu schalten.\n\nGPIO\nFUNK 433 Mhz\nIO_Expander MCP23S17"
+Authors="GOrdon Karnauka"
+TabSize=2
+Translate=1
+Language=de
+Packager=1

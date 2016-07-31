@@ -1,0 +1,41 @@
+' Gambas module file
+
+ Public aKL As New CDS[]  
+
+Public Function FillPictureArray() As CDS[] 
+ Dim hCDS As CDS
+ Dim myKL As New CDS[]
+ Dim sWorkDir As String
+ 
+ sWorkDir = FMain.DirBox1.Value
+ 
+' Dim i As Integer
+ 'Dim AdapterI As String
+' Dim objPfad As String
+  hCDS = New CDS
+  hCDS.Name = "Aus.jpg"
+  hCDS.Bild = Image.Load(sWorkDir & "/WebSite/pictures/Aus.jpg")
+  hCDS.String = File.Load(sWorkDir & "/WebSite/pictures/Aus.jpg")
+  myKL.Add(hCDS)
+
+  hCDS = New CDS
+  hCDS.Name = "Ein.jpg"
+  hCDS.Bild = Image.Load(sWorkDir & "/WebSite/pictures/Ein.jpg")
+  hCDS.String = File.Load(sWorkDir & "/WebSite/pictures/Ein.jpg")
+  myKL.Add(hCDS)
+
+  hCDS = New CDS
+  hCDS.Name = "green.jpg"
+  hCDS.Bild = Image.Load(sWorkDir & "/WebSite/pictures/green.jpg")
+  hCDS.String = File.Load(sWorkDir & "/WebSite/pictures/green.jpg")
+  myKL.Add(hCDS)
+  
+  hCDS = New CDS
+  hCDS.Name = "red.jpg"
+  hCDS.Bild = Image.Load(sWorkDir & "/WebSite/pictures/red.jpg")
+  hCDS.String = File.Load(sWorkDir & "/WebSite/pictures/red.jpg")
+  myKL.Add(hCDS)
+
+  aKL = myKL
+  Return myKL
+End ' Function()

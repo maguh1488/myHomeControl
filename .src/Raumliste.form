@@ -1,0 +1,166 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,110,82)
+  { !TreeView1 TreeView
+    MoveScaled(3,2,37,21)
+    #Public = True
+  }
+  { Button1 Button
+    MoveScaled(41,7,22,4)
+    Text = ("Raum Hinzufügen")
+  }
+  { Button2 Button
+    MoveScaled(41,18,22,5)
+    Text = ("Teilnehmer Hinzufügen")
+  }
+  { RoomName TextBox
+    MoveScaled(41,2,22,4)
+    Text = ("Raum Name")
+  }
+  { RoomID TextBox
+    MoveScaled(65,7,7,4)
+    Text = ("0")
+  }
+  { DeviceName TextBox
+    MoveScaled(41,14,22,4)
+    Text = ("Teilnehmer Name")
+  }
+  { DeviceID TextBox
+    MoveScaled(65,18,7,4)
+    Text = ("0")
+  }
+  { SelectDevice TextBox
+    MoveScaled(3,24,22,4)
+    Text = ("Raum Name")
+  }
+  { SelectDeviceNode TextBox
+    MoveScaled(27,24,13,4)
+    Text = ("Node")
+  }
+  { EntryDelete Button
+    MoveScaled(3,29,14,4)
+    Enabled = False
+    Text = ("Löschen")
+  }
+  { DeviceApply Button
+    MoveScaled(25,29,15,4)
+    Text = ("Übernehmen")
+  }
+  { Button3 Button
+    MoveScaled(93,36,14,4)
+  }
+  { Timer1 #Timer
+    #MoveScaled(84,35)
+  }
+  { LCDsekundeEiner LCDLabel
+    MoveScaled(101,29,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDsekundeZehner LCDLabel
+    MoveScaled(98,29,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDMinuteZehner LCDLabel
+    MoveScaled(91,29,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDMinuteEiner LCDLabel
+    MoveScaled(94,29,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDStundeZehner LCDLabel
+    MoveScaled(84,29,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDStundeEiner LCDLabel
+    MoveScaled(87,29,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDStundeHunderter LCDLabel
+    MoveScaled(81,29,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDsekundeEiner2 LCDLabel
+    MoveScaled(101,20,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDsekundeZehner2 LCDLabel
+    MoveScaled(98,20,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDMinuteZehner2 LCDLabel
+    MoveScaled(91,20,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDMinuteEiner2 LCDLabel
+    MoveScaled(94,20,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDStundeZehner2 LCDLabel
+    MoveScaled(84,20,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDStundeEiner2 LCDLabel
+    MoveScaled(87,20,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { LCDStundeHunderter2 LCDLabel
+    MoveScaled(81,20,3,5)
+    Font = Font["Bold"]
+    Foreground = Color.DarkGreen
+    Text = ("0")
+  }
+  { SpinBox1 SpinBox
+    MoveScaled(101,15,3,4)
+  }
+  { SpinBox2 SpinBox
+    MoveScaled(98,15,3,4)
+  }
+  { CheckBox1 CheckBox
+    MoveScaled(105,21,2,3)
+  }
+  { Button4 Button
+    MoveScaled(4,34,24,6)
+    Text = ("blättern")
+  }
+  { TextArea TextBox
+    MoveScaled(4,41,36,4)
+    Text = ("Raum Name")
+  }
+  { Button5 Button
+    MoveScaled(4,47,18,5)
+  }
+  { TextBox1 TextBox
+    MoveScaled(25,48,11,4)
+  }
+  { ListBox1 ListBox
+    MoveScaled(8,59,22,14)
+  }
+}

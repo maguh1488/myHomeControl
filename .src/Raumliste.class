@@ -1,0 +1,217 @@
+' Gambas class file
+
+ 
+ Public Struct Raum_V
+   RaumName As String
+   Teilnehmer As ListBox
+ End Struct
+
+  Raum[20] As Struct Raum_V
+ 
+
+Public Sub TreeView1_Click()
+  If TreeView1.Count > 0 Then EntryDelete.Enabled = True
+  SelectDevice.text = TreeView1.Current.Text
+  SelectDeviceNode.Text = TreeView1.Current.Key
+End
+
+Public Sub Button1_Click()
+
+  RoomID.text = RoomID.text + 1
+  DeviceID.Text = 0
+  TreeView1.Add(RoomID.text, RoomName.Text)
+
+End
+
+Public Sub Button2_Click()
+
+ DeviceID.text = DeviceID.text + 1
+ TreeView1.Add(RoomID.text & "-" & DeviceID.text, DeviceName.Text,, RoomID.text)
+
+End
+
+Public Sub EntryDelete_Click()
+
+  TreeView1.Remove(SelectDeviceNode.Text)
+  'EntryDelete.Enabled = False
+  SelectDevice.Text = ""
+  SelectDeviceNode.Text = ""
+  EntryDelete.Enabled = False
+ If TreeView1.Count = 0 Then 
+   RoomID.Text = 0
+   DeviceID.Text = 0
+   
+ Endif
+End
+
+Public Sub DeviceApply_Click()
+
+  TreeView1.Current.Text = SelectDevice.Text
+
+End
+
+Public Sub Button3_Click()
+
+ LCDsekundeEiner.Text = 0
+ LCDsekundeZehner.Text = 0
+ LCDMinuteEiner.Text = 0
+ LCDMinuteZehner.Text = 0
+ LCDStundeEiner.Text = 0
+ LCDStundeZehner.Text = 0
+ LCDStundeHunderter.Text = 0
+ 
+ Timer1.Enabled = True 
+End
+
+Public Sub Timer1_Timer()
+
+
+If CheckBox1.Value = True Then
+  If LCDsekundeEiner2.Text = LCDsekundeEiner.Text Then
+    If LCDsekundeZehner2.Text = LCDsekundeZehner.Text Then
+      Message.Info("ENDE")
+      Timer1.Enabled = False
+      Return
+    Endif
+  Endif
+End If
+
+  RunttimeLCD
+
+
+End
+
+
+Public Sub SpinBar1_Change()
+
+  
+
+End
+Sub RunttimeLCD()
+  
+    LCDsekundeEiner.Text += 1
+  
+  If LCDsekundeEiner.Text = "10" Then
+    LCDsekundeEiner.Text = 0
+    LCDsekundeZehner.Text += 1
+  End If
+  
+  If LCDsekundeZehner.text = "6" Then
+      LCDsekundeEiner.Text = 0
+      LCDsekundeZehner.Text = 0
+      LCDMinuteEiner.Text += 1
+  Endif
+  
+  If LCDMinuteEiner.Text = "10" Then
+      LCDsekundeEiner.Text = 0
+      LCDsekundeZehner.Text = 0
+      LCDMinuteEiner.Text = 0
+      LCDMinuteZehner.Text += 1
+  Endif
+  
+  If LCDMinuteZehner.Text = "6" Then
+      LCDsekundeEiner.Text = 0
+      LCDsekundeZehner.Text = 0
+      LCDMinuteEiner.Text = 0
+      LCDMinuteZehner.Text = 0
+      LCDStundeEiner.Text += 1
+  Endif
+  
+    If LCDStundeEiner.Text = "10" Then
+      LCDsekundeEiner.Text = 0
+      LCDsekundeZehner.Text = 0
+      LCDMinuteEiner.Text = 0
+      LCDMinuteZehner.Text = 0
+      LCDStundeEiner.Text = 0
+      LCDStundeZehner.Text += 1
+  Endif
+  
+    If LCDStundeZehner.Text = "10" Then
+      LCDsekundeEiner.Text = 0
+      LCDsekundeZehner.Text = 0
+      LCDMinuteEiner.Text = 0
+      LCDMinuteZehner.Text = 0
+      LCDStundeEiner.Text = 0
+      LCDStundeZehner.Text = 0
+      LCDStundeHunderter.Text += 1
+  Endif
+  
+End
+
+
+
+
+Public Sub SpinBox1_Change()
+
+  If SpinBox1.Value = 10 Then
+    SpinBox1.Value = 0
+  Endif
+  LCDsekundeEiner2.Text = SpinBox1.Value
+
+End
+
+Public Sub SpinBox2_Change()
+
+ If SpinBox2.Value = 6 Then
+   SpinBox2.Value = 0
+ Endif
+  LCDsekundeZehner2.Text = SpinBox2.Value 
+
+End
+
+Public Sub Form_Open()
+
+  
+
+End
+
+Public Sub Button4_Click()
+
+WalkTree(TreeView1)
+End
+Private Sub WalkTree(pTreeView As TreeView)
+ Dim sText As String
+ Dim sTmp As New Raum_V
+ 
+ Dim iItem As Integer
+ Dim liste As ListBox
+
+ liste = New ListBox(Me)
+
+ pTreeView.MoveFirst()
+ iItem = -1
+ Repeat
+  sText = sText & pTreeView.Item.Key & ", " & "'" & pTreeView.Item.Text & "'" & "\n"
+  If InStr(pTreeView.Item.Key, "-") <> 0 Then 
+    'Teilnehmer
+    liste.Add(pTreeView.Item.Text)
+    sTmp.Teilnehmer = liste
+  Else
+    sTmp.RaumName = pTreeView.Item.Text
+    iItem += 1
+    liste.Clear
+  Endif
+  
+  Raum[iItem] = sTmp
+
+  pTreeView.Item.Expanded = True
+  
+ Until pTreeView.MoveBelow()
+ 
+ TextArea.Text = sText
+
+
+ 
+ 
+ 
+End
+
+Public Sub Button5_Click()
+ Dim sTmp As Raum_V
+
+  sTmp = Raum[0]
+  TextBox1.Text = sTmp.RaumName
+    sTmp = Raum[1]
+  TextBox1.Text = sTmp.RaumName
+
+End

@@ -1,0 +1,1935 @@
+' Gambas class file
+
+Private Waiting As Boolean
+Private $iId As Integer
+Private sExtension As String
+Public httpServerName As String
+Public Website As String
+Public bild As String
+
+Public Struct Raum_V
+   RaumName As String
+   Teilnehmer As ListBox
+ End Struct
+
+ Public Raum[20] As Struct Raum_V
+ 
+ '
+ 'MCP23S17 Abschnitt definitionen
+ '
+ '
+ Library "/usr/local/lib/libwiringPi"
+ Public Extern wiringPiSetup() As Integer
+'  'initialises wiringPi (assumes calling program uses virtual Pin numbers)
+ Public Extern pinMode(pin As Integer, pud As Integer)
+'  'sets Pin mode to either INPUT, OUTPUT, (PWM_OUTPUT or GPIO_CLOCK if applicable)
+ Public Extern pullUpDnControl(pin As Integer, mode As Integer)
+'  'sets the input resistor (50k) mode (PUD_OFF, PUD_DOWN, PUD_UP)
+ Public Extern digitalRead(pin As Integer) As Integer        
+ 'returns the input state (low=0, high=1)
+Public Extern digitalWrite(pin As Integer, value As Integer)
+ 'sets the output state
+' We may Like To define Constants For Pin Mode: -
+Public Const PIN_INPUT As Integer = 0
+Public Const PIN_OUTPUT As Integer = 1
+'... And For levels: -
+Public Const PIN_LOW As Integer = 0
+Public Const PIN_HIGH As Integer = 1
+
+' 
+Public Struct SPI_DEVICE
+  SLAVE_NAME As String
+  SLAVE_NUMBER As Integer
+  SLAVE_ADDR As Integer
+End Struct
+
+ 'Private Chipfield As New SPI_DEVICE[]
+
+' Public Const SPI_SLAVE_ADDR_ONE As Integer = 64 'Val("&H" & "0x40 ") '64 ' Hex : 0x40"
+ Public Const SPI_IODIRA As Integer = 0 '0x00
+ Public Const SPI_IODIRB As Integer = 1 ' 0x01
+ Public Const SPI_IPOLA As Integer = 2 ' 0x02
+ Public Const SPI_IPOLB As Integer = 3 ' 0x03
+ Public Const SPI_GPINTENENA As Integer = 4 ' 0x04
+ Public Const SPI_GPINTENENB As Integer = 5 ' 0x05
+ Public Const SPI_DEFVALA As Integer = 6 ' 0x06
+ Public Const SPI_DEFVALB As Integer = 7 ' 0x06
+ Public Const SPI_INTCONA As Integer = 8 ' 0x08
+ Public Const SPI_INTCONB As Integer = 9 ' 0x08
+ Public Const SPI_IOCTRLA As Integer = 10 '0x0A
+ Public Const SPI_IOCTRLB As Integer = 11 '0x0B
+ Public Const SPI_GPPUA As Integer = 12 '0x0C
+ Public Const SPI_GPPUB As Integer = 13 '0x0D
+ Public Const SPI_INTFA As Integer = 14 '0x0E
+ Public Const SPI_INTFB As Integer = 15 '0x0F
+ Public Const SPI_INTCAPA As Integer = 16 '0x10
+ Public Const SPI_INTCAPB As Integer = 17 '0x11
+ Public Const SPI_GPIOA As Integer = 18 '0 x12
+ Public Const SPI_GPIOB As Integer = 19 '0 x13
+ Public Const SPI_OLATA As Integer = 20 '0x14
+ Public Const SPI_OLATB As Integer = 21 '0x15
+ 
+ Public Const SPI_SLAVE_WRITE As Integer = 0 '0 x00
+ Public Const SPI_SLAVE_READ As Integer = 1 '0 x01
+
+'#MCP23S17 - Pins
+'
+'http://wiringpi.com/pins/special-pin-functions/
+'
+'libwirepin 0 = gpio 17
+'libwirepin 1 = gpio 18
+'libwirepin 2 = gpio 21
+'libwirepin 3 = gpio 22
+'libwirepin 4 = gpio 23
+'libwirepin 5 = gpio 24
+'libwirepin 6 = gpio 26
+'
+'libwirepin 7 = gpio 04
+'libwirepin 8 = 
+'libwirepin 9 = 
+'libwirepin 10 = gpio 08
+'libwirepin 11 = gpio 07
+'libwirepin 12 = gpio 10
+'libwirepin 13 = gpio 09
+'libwirepin 14 = gpio 11
+'libwirepin 15 = uart tx
+'libwirepin 16 = uart rx
+'
+'libwirepin 17 = gpio 28
+'libwirepin 18 = gpio 29
+'libwirepin 19 = gpio 30
+'libwirepin 20 = gpio 31
+
+
+
+Public Const SCLK As Integer = 1 '18 '#Serial - Clock
+Public Const MOSI As Integer = 5 '24 '#Master - Out - Slave - In
+Public Const MISO As Integer = 4 '23 '#Master - In - Slave - Out
+Public Const CS As Integer = 6 '25 '#Chip - Select
+ 
+ 
+
+
+
+Public Sub Form_Open()
+  
+ 
+  
+
+  httpServerName = "peter!"
+  
+  TextBox1.Text = Application.Dir
+  TextBox2.Text = User.Home
+  
+  Tab_Menu.Font.Size = 16  
+  Tab_Menu.Font.Bold = True
+ ' TabStrip1.Foreground = Color.Green
+  Tab_Menu[0].text = "Konfiguration"
+  Tab_Menu[1].text = "Raum Editor"
+  Tab_Menu[2].text = "Aktion"
+  Tab_Menu[3].text = "Debug"
+  
+  Tab_Konfig.Font.Size = 12  
+  Tab_Konfig[0].Text = "Bus Konfiguration"
+  Tab_Konfig[1].Text = "Hardware Konfiguration"
+  
+  
+  GridView_Hardware.Columns.Count = 2
+  GridView_Hardware.Rows.Count = 17
+  GridView_Hardware.Columns.Width = 185
+ 
+
+  'Liste vorausfüllen mit PIN Konfig: Raspberry Pi 1 
+  RB_HardwareRev_1_Click
+  
+  'Heimverzeichniss setzen 
+  DirBox1.Value = "/home/pi/mini-Webserver"
+  
+  PictureBox1.Picture = Picture[DirBox1.Value & "/chip.png"]
+  PictureBox1.Refresh
+  
+  
+  
+  
+  'Konfigurationsdateien laden
+  KonfigLaden
+  
+  
+  'WebServer Grafiken laden
+  GrafikLoader.FillPictureArray
+  
+  '
+  'die wiringPi schnittstelle initialisieren
+  wiringPiSetup()
+  'Pin Belegung am RaspberryPi festlegen
+  MCP_PinSetup
+  'MCP Laden und konfigurieren
+  LoadMCP
+
+Catch
+     Me.text = "WiringPi setup fehler - p.s. als root gestartet ?"
+  
+  
+End
+
+Public Sub MCP_PinSetup()
+ ' GPIO Ports am RaspberryPi konfigurieren
+ 'MCP23S17 - Pins übersicht                   Pi_GPIO pin     libwiringPi pin
+    pinMode(SCLK, PIN_OUTPUT)  'SCLK =          18                  1                 '#Serial - Clock
+    pinMode(MOSI, PIN_OUTPUT)  'MOSI =          24                  5                 #Master - Out - Slave - In
+    pinMode(MISO, PIN_INPUT)   'MISO =          23                  4                 #Master - In - Slave - Out
+    pinMode(CS, PIN_OUTPUT)    'CS   =          25                  6                  #Chip - Select
+ '  #Pegel vorbereiten
+    digitalWrite(CS, PIN_HIGH)    
+    digitalWrite(SCLK, PIN_LOW)
+End
+
+Private Sub LoadMCP()
+
+'  Dim Chip As New SPI_DEVICE
+'  Dim i As Integer
+ ' Dim x As Integer
+  
+'  Dim chipadresse As Integer
+'  Dim sTmp As String
+'  Dim test As String
+  
+  ' sTmp = "00000000"
+ 
+   ' #Initialisierung der MCP23S17's
+'    64 66 68 70 
+    ' For i = 0 To 16
+    '    sTmp = "00000000"
+    '   If GridAktorKonfig[i, 1].Text = "-1" Then
+    '      chipadresse = GridAktorKonfig[i, 2].Text
+    '     Chip = New SPI_DEVICE
+    '     Chip.SLAVE_ADDR = 64 + chipadresse 
+    '     Chip.SLAVE_NUMBER = chipadresse + 1
+    '     Chip.SLAVE_NAME = "MCP23S17-" & chipadresse
+      'hier wird der Chip konfiguriert
+      
+      MCP_sendSPI(64, SPI_IOCTRLA, Val("&H08")) '#Hardware Addressing Enable" 
+      MCP_sendSPI(64, SPI_IOCTRLb, Val("&H08")) '#Hardware Addressing Enable" 
+      
+      'MCP_sendSPI(64, SPI_IODIRA, Val("&X11111111")) '#GPPIOA als Ausgänge programmieren
+      'MCP_sendSPI(64, SPI_IODIRB, Val("&X11111111")) '#GPPIOA als Ausgänge programmieren
+      MCP_sendSPI(64, SPI_IODIRA, Val("&X00000000")) '#GPPIOA als Ausgänge programmieren
+      MCP_sendSPI(64, SPI_IODIRB, Val("&X00000000")) '#GPPIOA als Ausgänge programmieren
+      
+      MCP_sendSPI(64, SPI_GPIOB, Val("&H00")) '#Reset des GPIOB
+      MCP_sendSPI(64, SPI_GPIOA, Val("&H00")) '#Reset des GPIOa
+        
+      MCP_sendSPI(66, SPI_IOCTRLA, Val("&H08")) '#Hardware Addressing Enable" 
+      MCP_sendSPI(66, SPI_IOCTRLb, Val("&H08")) '#Hardware Addressing Enable" 
+      
+      MCP_sendSPI(66, SPI_IODIRA, Val("&X11111111")) '#GPPIOA als Eingänge programmieren
+      MCP_sendSPI(66, SPI_IODIRB, Val("&X11111111")) '#GPPIOA als Eingänge programmieren
+      
+      MCP_sendSPI(66, SPI_GPIOB, Val("&H00")) '#Reset des GPIOB
+      MCP_sendSPI(66, SPI_GPIOA, Val("&H00")) '#Reset des GPIOa
+      
+      
+      'PortA_Aus_Click()
+      MCP_sendSPI(64, SPI_GPIOA, &X111111111) 'Port a ausschalten
+      MCP_sendSPI(64, SPI_GPIOB, &X111111111) 'Port b ausschalten
+      
+      'PortB_Aus_Click()
+      
+        ' For x = 3 To 10
+        '   test = GridAktorKonfig.Columns[x].Title
+        '   test = GridAktorKonfig[i, 0].Text
+        '   If GridAktorKonfig[i, x].Text = "Eingang" Then
+        '     If x = 3 Then
+        '       sTmp = "1" & Mid(sTmp, x - 3 + 2, Len(sTmp))
+        '     Else If x = 10 Then
+        '       sTmp = Mid(sTmp, 1, Len(sTmp) - 1) & "1"
+        '     Else
+        '         sTmp = Mid(sTmp, 1, x - 3) & "1" & Mid(sTmp, x - 3 + 2, Len(sTmp))
+        '     Endif
+        '   Endif
+        '    If GridAktorKonfig[i, x].Text = "Ausgang" Then
+        '      If x = 3 Then
+        '       sTmp = "0" & Mid(sTmp, x - 3 + 1, Len(sTmp))
+        '     Else If x = 10 Then
+        '       sTmp = Mid(sTmp, 1, Len(sTmp) - 1) & "0"
+        '     Else
+        '         sTmp = Mid(sTmp, 1, x - 3) & "0" & Mid(sTmp, x - 3 + 2, Len(sTmp))
+        '     Endif
+        '   Endif
+        ' Next
+        
+        ' MCP_sendSPI(Chip.SLAVE_ADDR, SPI_IODIRA, Val("&X" & sTmp)) '#GPPIOB als Eingaenge programmieren
+        ' For x = 11 To 18
+        '   test = GridAktorKonfig.Columns[x].Title
+        '   If GridAktorKonfig[i, x].Text = "Eingang" Then
+        '     If x = 11 Then
+        '       sTmp = "1" & Mid(sTmp, 2, Len(sTmp))
+        '     Else If x = 18 Then
+        '       test = GridAktorKonfig.Columns[x].Title
+        '       sTmp = Mid(sTmp, 1, Len(sTmp) - 1) & "1"
+        '     Else
+        '       sTmp = Mid(sTmp, 1, x - 11) & "1" & Mid(sTmp, x - 11 + 2, Len(sTmp))
+        '     Endif
+        '   Endif
+        '    If GridAktorKonfig[i, x].Text = "Ausgang" Then
+        '     If x = 11 Then
+        '       sTmp = "0" & Mid(sTmp, 2, Len(sTmp))
+        '     Else If x = 18 Then
+        '       sTmp = Mid(sTmp, 1, Len(sTmp) - 1) & "0"
+        '     Else
+        '       sTmp = Mid(sTmp, 1, x - 11) & "0" & Mid(sTmp, x - 11 + 2, Len(sTmp))
+        '     Endif
+        '   Endif
+        ' Next
+        ' MCP_sendSPI(Chip.SLAVE_ADDR, SPI_IODIRB, Val("&X" & sTmp)) '#GPPIOA als Ausgaenge programmieren
+        
+
+    '     Chipfield.Push(Chip)
+    '   Endif
+    ' Next 
+End
+
+
+Public Sub MCP_sendSPI(ByRef opcode As Integer, ByRef addr As Integer, ByRef data As Integer)
+    
+    'Dim BinValue As Bin
+    '#CS aktive(LOW - Aktiv)
+    digitalWrite(CS, PIN_LOW)
+    
+    'hier binärcoding 
+   ' BinValue = Bin$(opcode Or 
+    
+    MCP_sendValue(opcode Or SPI_SLAVE_WRITE) 'Val(Bin(opcode Or SPI_SLAVE_WRITE))) '# OP-Code senden
+    MCP_sendValue(addr) '#Adresse senden
+    MCP_sendValue(data) '#Daten senden
+
+    '#CS nicht aktiv
+    digitalWrite(CS, PIN_HIGH) 
+End
+
+Public Sub MCP_sendValue(ByRef value As Integer)
+  Dim i As Integer
+  
+  'def sendValue(value):
+   ' #Value senden
+    For i = 0 To 7
+        'If (value & 0 x80) = True Then
+        If (value And 128) = 128 Then
+            digitalWrite(MOSI, PIN_HIGH)
+        Else
+            digitalWrite(MOSI, PIN_LOW)
+        End If
+       ' #Negative Flanke des Clocksignals generieren    
+        digitalWrite(SCLK, PIN_HIGH)
+        digitalWrite(SCLK, PIN_LOW)
+        value = Shl(value, 1) '#Bitfolge eine Position nach links schieben
+        'Mid(value, i, 1) '
+    Next
+  
+End
+
+Public Function MCP_readSPI_String(ByRef opcode As Integer, ByRef addr As Integer) As String
+    
+    Dim value As String
+    Dim i As Integer
+    '#CS aktive(LOW - Aktiv)
+    digitalWrite(CS, PIN_LOW)
+    
+    MCP_sendValue(opcode Or SPI_SLAVE_READ) '# OP-Code senden
+    MCP_sendValue(addr) '#Adresse senden
+    
+    '#Empfangen der Daten    
+    For i = 0 To 7
+        'value < <= 1 #1 Postition nach links schieben
+'         value = Shl(value, 1)
+        
+        If digitalRead(MISO) = 1 Then
+          value = "1" & value
+        Else
+          value = "0" & value
+        End If
+    '    #Abfallende Clock - Flanke generieren    
+        digitalWrite(SCLK, PIN_HIGH)
+        digitalWrite(SCLK, PIN_LOW)
+    Next
+   ' #CS nicht aktiv
+    digitalWrite(CS, PIN_HIGH)
+    Return value
+   End
+
+Public Sub MyServerSocket_Error()
+  Message.Error("Unable to bind socket")
+End
+
+Public Sub MyServerSocket_Connection(sHost As String)
+
+  '*******************************
+  ' A client has arrived!
+  ' let's accept it
+  Dim Obj As Socket
+
+
+  If MyServerSocket.Status <= Net.Inactive Then Return
+  If chk_Log.Value = True
+      WEB_txtLog.Text = WEB_txtLog.Text & "Connection request from : " & sHost & Chr(13) & Chr(10)
+   
+   '   WEB_txtLog.Text = WEB_txtLog.Text & "Connection request accepted" & Chr(13) & Chr(10)
+   
+  Endif
+  Obj = MyServerSocket.Accept()
+  Obj.Blocking = False
+  $iID = Last.Count
+ ' Inc $iId
+  Obj.Tag = [$iId, 0, ""]
+  If chk_Log.Value = True
+   If Obj.Status = Net.Connected Then
+     WEB_txtLog.Text = WEB_txtLog.Text & "Connection from " & Obj.RemoteHost & ":" & Obj.RemotePort & " accepted (local port " & Obj.LocalPort & ")" & Chr(13) & Chr(10) 
+    End If
+  Endif
+End
+
+Public Sub Socket_Ready()
+ If chk_Log.Value = True
+  WEB_txtLog.Text &= "-- Client working --\n"
+End If
+
+End
+Public Sub Socket_Closed()
+  
+   If chk_Log.Value = True
+  WEB_txtLog.Text &= "Client #" & Last.Tag[0] & " Closed\n"
+End If
+
+End
+Public Sub Socket_Read()
+
+  Dim sBuf As String
+  Dim anfrage As String
+  Dim tmp As String
+  Dim Head As String
+
+  Dim Kommando As String
+  Dim httpKommando As String
+
+  If Last.Status <> Net.Connected Then Return
+  
+  Read #Last, sBuf, Lof(Last)
+  
+  If chk_Log.Value = True
+      WEB_txtLog.Text &= "Socket #" & Last.Tag[0] & " --> " & sBuf & "\n"
+  End If
+  
+    Print sbuf
+  
+  httpKommando = Mid(sbuf, 1, InStr(sbuf, " ") - 1)
+  
+  If httpKommando = "GET" Then
+    head = Mid(sbuf, 1, InStr(sbuf, "\n"))
+    sbuf = Mid(sbuf, Len(head) + 1, Len(sbuf))
+    tmp = Right(sbuf, 4) 'Mid(sbuf, Len(sbuf) - 8, 8) 
+    Last.Tag[2] = head   
+  Else If httpKommando = "POST" Then
+    head = Mid(sbuf, 1, InStr(sbuf, "\n"))
+    Kommando = Mid(sbuf, InStr(sbuf, "\r\n\r\n") + 4, Len(sbuf))
+    sbuf = Mid(sbuf, Len(head) + 1, Len(sbuf) - Len(kommando) - Len(head))
+    tmp = Right(sbuf, 4) 'Mid(sbuf, Len(sbuf) - 8, 8)  
+    Last.Tag[2] = Kommando  
+  Endif
+  
+  Last.Tag[1] = 0
+  If head <> "\n" Then
+   ' Last.Tag[2] = head  
+  End If
+  
+  If sbuf = "\n" Or If tmp = "\r\n\r\n" Then
+    anfrage = Mid(Last.Tag[2], 1, InStr(Last.Tag[2], " ") - 1)
+    
+    If httpKommando = "GET" Or If anfrage = "GET" Then
+      WEB_Get_Anfrage(Last.Tag[2])
+    Else If httpKommando = "POST" Or If anfrage = "POST" Then
+    '  WEB_Post_Anfrage(Last.Tag[2])
+      WEB_Post_Anfrage(Last.Tag[2])
+      
+    Endif
+  Endif
+  
+End
+Public Sub Socket_Write()
+ Dim hSocket As Socket = Last
+  Dim iInd As Integer
+  
+  'Debug hSocket;; hSocket.Tag
+  iInd = hSocket.Tag[1]
+  If iInd < 0 Then 
+    'hier wird die einzelanfrage geschlossen
+    'danach bereit für weitere anfragen
+    hSocket.Close
+    'Label7.Text -= 1
+    Return
+  Endif
+  Do
+    Inc iInd
+
+    If iInd > 1 Then
+      hSocket.Tag[1] = -1
+    '  Label7.Text -= 1
+    If chk_Log.Value = True Then
+        WEB_txtLog.Text &= "Client #" & Last.Tag[0] & " Closed\n"
+    End If
+      hSocket.Close
+      Return
+    Endif
+  
+  
+   ' Label2.text = Len(hSocket.Tag[2])
+    'Label5.text = Label5.Text + Label2.Text
+    
+    Try Print #hSocket, hSocket.Tag[2]
+
+    If Error Then 
+      Debug Error.Text
+      Break
+    Endif
+  Loop
+  
+  hSocket.Tag[1] = iInd
+  
+Catch
+  
+End
+
+Public Sub WEB_Post_Anfrage(ByRef sbuf As String)
+    'HTML Variablen
+    Dim htmlResponse As String 
+    Dim tLine As String
+    Dim html_ContentType As String
+    Dim html_ContentEncoding As String
+    Dim html_ContentLength As String
+    
+    Dim zustand As String
+   ' Dim kommando As String
+    Dim ResDir As String
+
+     Dim sKey As String
+   Dim Cp As New Compress
+   Dim buf As String
+   
+   Dim sName As String
+   Dim geraeteID As String
+   Dim geraet As String
+   Dim sDeviceID As String
+   Dim sKanal As String
+   Dim sPin As String
+   Dim sHausCode As String
+   Dim sBusNr As String
+   
+   
+   sExtension = ".gz"
+    
+   
+    If sbuf = "" Then Return
+    
+       'sbuf = Mid(sbuf, InStr(sbuf, "\r\n\r\n") + 4, Len(sbuf))                                        'übergabe zurechtschneiden vorne wech
+       sbuf = Mid(sbuf, 1, InStr(sbuf, ".x") - 1)                                        'übergabe zurechtschneiden hinten wech
+       sDeviceID = Mid(sbuf, 9, Len(sbuf) - 8 - 2)
+       'sKey = Mid(DeviceID, 1,
+       zustand = Mid(sbuf, Len(sBuf), 1)                                          'übergabe zurechtschneiden
+       
+     htmlResponse = "HTTP/1.0 201 OK" & gb.CrLf
+     'Schalten = True
+     'Erste zeile in der Listbox aufrufen
+     TreeView_Raumliste.MoveFirst()
+     'und dann solange durchlaufen 
+     'bis ende erreicht ist...
+     Repeat
+      sKey = TreeView_Raumliste.Item.Key
+      sName = TreeView_Raumliste.Item.Text 
+      If InStr(sKey, sDeviceID) <> 0 Then  
+        If InStr(sKey, "-") <> 0 Then 
+          'Teilnehmer
+          If InStr(sKey, "Status") <> 0 Then 
+            'zustand = sName
+            If geraeteID = sDeviceID Then
+              TreeView_Raumliste.Item.Text = "Status:" & zustand  
+            Endif
+          Else If InStr(sKey, "Pi-Ausgang") <> 0 Then 
+            sName = sName 
+            If InStr(sName, "GPIO") <> 0 Then
+              sPin = Mid(sName, 6, Len(sName))
+              Aktor_GPIOSender(sPin, zustand)
+            Endif
+            If InStr(sName, "433Mhz") <> 0 Then
+              'sName kürzen 433Mhz: abschneiden (val1)
+              sName = Mid(sName, 8, Len(sName))
+              sBusNr = Mid(sName, 1, InStr(sName, ":") - 1)
+              
+              'sName kürzen Bus 1: abschneiden (val2)
+              sName = Mid(sName, Len(sBusNr) + 2, Len(sName))
+              sHausCode = Mid(sName, 1, InStr(sName, ":") - 1)
+              
+              'sName kürzen 10101: abschneiden (val3)
+              sName = Mid(sName, Len(sHausCode) + 2, Len(sName))
+              sKanal = Mid(sName, 1, Len(sName))
+              
+              Aktor_FunkSender(sBusNr, sHausCode, sKanal, zustand)
+            Endif
+          Else 
+            geraeteID = sKey
+            geraet = sName
+          End If
+      Else
+        'Raum
+        
+      Endif
+     Endif '
+     
+     TreeView_Raumliste.Item.Expanded = True
+      
+    Until TreeView_Raumliste.MoveBelow()
+         
+
+    html_ContentType = "Content-Type: text/html"
+    ResDir = Application.Dir & "/Documents/Gambas Projects/mini-Webserver" & "/WebSite/"
+    CreateSite()
+    ' tLine = File.Load(ResDir & "/index.html")
+    tLine = Website
+    If HTTP_Kompression.Value = True Then
+      Cp.Type = "zlib"
+      buf = cp.String(tLine, 6, False)
+      tLine = buf
+      html_ContentEncoding = "Content-Encoding: deflate" & gb.CrLf 
+    End If
+    html_ContentLength = "Content-Length: " & Len(Bild) & Len(tLine)
+
+    Last.Tag[2] = htmlResponse & html_ContentEncoding & html_ContentLength & gb.CrLf & gb.CrLf & tLine
+
+    Socket_Write
+
+End
+
+Public Sub WEB_Get_Anfrage(ByRef sbuf As String)
+  
+  Dim Seite As String
+  Dim httpVersion As String
+  Dim html_ContentType As String
+  Dim html_ContentLength As String
+  Dim html_ContentEncoding As String
+  
+  Dim htmlResponse As String
+  Dim tLine As String
+'  Dim kommando As String
+ ' Dim zustand As String
+  Dim endung As String
+  Dim ResDir As String
+
+    Dim Cp As New Compress
+   Dim buf As String
+   sExtension = ".gz"
+  'sbuf einkürzen 
+  'aufteilen und abschneiden
+  'als erstes das GET weg
+    sbuf = Trim(Mid(sbuf, 4, Len(sbuf)))
+  seite = Trim(Mid(sbuf, 1, InStr(sbuf, "HTTP") - 1))
+    sbuf = Trim(Mid(sbuf, Len(seite) + 1, Len(sbuf)))
+  If seite = "/" Then seite = "/index.html"
+  httpVersion = Mid(sbuf, 1, 8) 
+  If httpVersion = "HTTP/1.0" Then htmlResponse = "HTTP/1.0 200 OK"
+  If httpVersion = "HTTP/1.1" Then htmlResponse = "HTTP/1.1 200 OK"
+    sbuf = Trim(Mid(sbuf, Len(httpVersion) + 1, Len(sbuf)))
+    'auswertung der datei endung
+  If InStr(seite, ".") <> 0 Then
+    endung = Mid(seite, InStr(seite, "."), Len(seite))
+    If endung = ".htm" Then 
+      html_ContentType = "Content-Type: text/html"
+      ResDir = Application.Dir & "/Documents/Gambas Projects/mini-Webserver" & "/WebSite"
+    Else If endung = ".html" Then
+      html_ContentType = "Content-Type: text/html"
+      ResDir = Application.Dir & "/Documents/Gambas Projects/mini-Webserver" & "/WebSite"
+    Else If endung = ".png" Then
+      html_ContentType = "Content-Type: image/png"
+      ResDir = Application.Dir & "/Documents/Gambas Projects/mini-Webserver" & "/pictures"
+    Else If endung = ".ico" Then
+     html_ContentType = "Content-Type: image/x-icon"
+     ResDir = Application.Dir & "/Documents/Gambas Projects/mini-Webserver" & "/pictures"
+    Else If endung = ".jpg" Then
+      html_ContentType = "Content-Type: image/jpeg"
+      ResDir = Application.Dir & "/Documents/Gambas Projects/mini-Webserver" & "/pictures"
+    Else If endung = ".jpeg" Then
+      html_ContentType = "Content-Type: image/jpeg"
+      ResDir = Application.Dir & "/Documents/Gambas Projects/mini-Webserver" & "/pictures"
+    Endif
+  Endif
+  
+  If seite = "/index.html" Then
+   CreateSite()      
+  Endif                                                                                               'index neu aufbauen wenn er gerufen wird
+  
+  If Seite = "/Aus.jpg" Then
+     Bild = GrafikLoader.aKL[0].String  'Imag
+  Endif
+ If Seite = "/Ein.jpg" Then
+     Bild = GrafikLoader.aKL[1].String  'Imag
+  Endif
+   If Seite = "/green.jpg" Then
+     Bild = GrafikLoader.aKL[2].String  'Imag
+  Endif
+   If Seite = "/red.jpg" Then
+     Bild = GrafikLoader.aKL[3].String  'Imag
+  Endif
+  
+  If bild = Null Then
+    'tLine = File.Load(ResDir & seite)
+    tLine = Website
+   '  Message(Len(tline))
+    If HTTP_Kompression.Value = True Then
+     Cp.Type = "zlib"
+     buf = cp.String(tLine, 6, False)
+     tLine = buf
+     html_ContentEncoding = "Content-Encoding: deflate" & gb.CrLf 
+    End If
+   '     Message(Len(tline))
+    html_ContentLength = "Content-Length: " & Len(tline)
+   
+    Last.Tag[2] = htmlResponse & gb.CrLf & html_ContentEncoding & html_ContentLength & gb.CrLf & httpServerName & gb.CrLf & html_ContentType & gb.CrLf & gb.CrLf & tLine        'und Antwortsatz zusammenbauen
+ Else
+   
+   ' Message(Len(Bild))
+    If HTTP_Kompression.Value = True Then
+     Cp.Type = "zlib"
+     buf = cp.String(Bild, 6, False)
+     Bild = buf
+     html_ContentEncoding = "Content-Encoding: deflate" & gb.CrLf 
+    End If
+    '    Message(Len(Bild))
+   html_ContentLength = "Content-Length: " & Len(Bild)
+   
+    Last.Tag[2] = htmlResponse & gb.CrLf & html_ContentEncoding & html_ContentLength & gb.CrLf & httpServerName & gb.CrLf & html_ContentType & gb.CrLf & gb.CrLf & Bild        'und Antwortsatz zusammenbauen
+    Bild = Null
+  End If
+                                                                                                                     
+Socket_Write
+Last.Tag[2] = "Close"
+Last.Close
+End
+Public Sub WEB_btnWebServerClose_Click()
+  
+  MyServerSocket.Close()
+'  WEB_btnWebServerClose.Enabled = False
+'  WEB_btnWebServerListen.Enabled = True
+'  WEB_cmbWebServerMaxClient.Enabled = True
+'  WEB_cmbType.Enabled = True
+'  WEB_cmbType_Click()
+  
+End
+
+Public Sub WEB_btnWebServerPause_Click()  
+  If Waiting Then
+    MyServerSocket.Resume()
+'    WEB_btnWebServerPause.Text = "Pause"
+  Else
+    MyServerSocket.Pause()
+'    WEB_btnWebServerPause.Text = "Resume"
+  End If
+  Waiting = Not Waiting
+End
+
+
+Public Sub CreateSite()  'Raumlistenabhängig
+  Dim SeitenCode As String
+  
+  Dim raum_alt As String
+  Dim raum_neu As String
+  Dim geraet As String
+  Dim geraeteID As String 'Integer
+  Dim schalterstellung As String
+  Dim zustand As String
+  Dim AktorNeu As String
+  Dim ButtonPicture1 As String
+  Dim ButtonPicture2 As String
+ 
+  Dim sKey As String
+  Dim sName As String
+ 
+ Dim iItem As Integer
+ Dim liste As ListBox
+
+ liste = New ListBox(Me)
+
+ TreeView_Raumliste.MoveFirst()
+ iItem = -1
+ 
+  SeitenCode = "<!DOCTYPE html>" & gb.CrLf
+  SeitenCode = SeitenCode & "<html>" & gb.CrLf
+  SeitenCode = SeitenCode & " <head>" & gb.CrLf
+  SeitenCode = SeitenCode & "  <meta charset = " & Chr(34) & "UTF-8" & Chr(34) & " >" & gb.CrLf
+  SeitenCode = SeitenCode & "  <title > Maguh WebServer mit Gambas </title>" & gb.CrLf
+  'SeitenCode = SeitenCode & "</head>"
+ ' SeitenCode = SeitenCode & "<body>"
+  SeitenCode = SeitenCode & "  <style type=" & Chr(34) & "text/css" & Chr(34) & ">body { background-color:#000000; font-weight:bold; font-family:Arial; font-size:120%; }</style>" & gb.CrLf
+  SeitenCode = SeitenCode & " </head>" & gb.CrLf
+  SeitenCode = SeitenCode & " <body>" & gb.CrLf
+ ' SeitenCode = SeitenCode & "  <br>" & gb.CrLf
+  SeitenCode = SeitenCode & "  <h2 style=" & Chr(34) & "text-align: center; " & Chr(34) & ">" & gb.CrLf
+  SeitenCode = SeitenCode & "   <span style=" & Chr(34) & "font-size: x-large; " & Chr(34) & ">" & gb.CrLf
+  SeitenCode = SeitenCode & "    <span style=" & Chr(34) & "color: #ffffff; " & Chr(34) & ">E-HomeControl</span>" & gb.CrLf
+  SeitenCode = SeitenCode & "    <span style=" & Chr(34) & "color: #ffffff; " & Chr(34) & "> v0.0.1 alpha</span>"
+  SeitenCode = SeitenCode & "   </span>"
+  SeitenCode = SeitenCode & "  </h2>" & gb.CrLf
+  SeitenCode = SeitenCode & "  <br>" & gb.CrLf
+  
+  'hier beginnt die tabelle
+  SeitenCode = SeitenCode & "  <table style=" & Chr(34) & "background-color: #000000; width: 441px; height: 253px;" & Chr(34) & " border=" & Chr(34) & "2" & Chr(34) & " align=" & Chr(34) & "center" & Chr(34) & ">" & gb.CrLf
+  SeitenCode = SeitenCode & "  <tbody>" & gb.CrLf
+  'die tabelle muss jetzt nach Räumen aufgebaut werden 
+  ' erster Raum gefunden dann Überschrift setzen
+  ' dann alle Geräte im gleichen Raum in die Tabelle übernehmen
+  'For x = 0 To 19 'Raumliste.TreeView1.Count '1 'GridRaumliste.Rows.Count - 1
+    'Raumliste.TreeView1.n
+    'geraeteID = Raumliste.TreeView1.MoveTo(x)
+   ' Raumliste.TreeView1.MoveCurrent
+   ' Raumliste.TreeView1.MoveNext
+   '
+   ' 
+    Repeat
+      
+      'sText = sText & TreeView1.Item.Key & ", " & "'" & TreeView1.Item.Text & "'" & "\n"
+      sKey = TreeView_Raumliste.Item.Key
+      sName = TreeView_Raumliste.Item.Text 
+      
+      If InStr(sKey, "-") <> 0 Then 
+    'Teilnehmer
+        'liste.Add(TreeView1.Item.Text)
+        'sTmp.Teilnehmer = liste
+         If InStr(sKey, "Status") <> 0 Then 
+          zustand = sName
+         Else 
+          geraeteID = sKey
+          geraet = sName
+          zustand = ""
+        End If
+      Else
+        'Raumname !!!!
+       ' sTmp.RaumName = TreeView1.Item.Text
+        raum_neu = sName
+       ' iItem += 1
+       ' liste.Clear
+        geraet = ""
+        zustand = ""
+      Endif
+     ' Raum[iItem] = sTmp
+      TreeView_Raumliste.Item.Expanded = True
+     
+   '         Raumliste.TreeView1.Current.Selected = True
+    'sTmp = Raum[x]
+   ' geraeteID = sTmp.RaumName  '1 'GridRaumliste[x, 0].Text
+   ' raum_neu = sTmp.RaumName  ' GridRaumliste[x, 1].Text
+    
+      If zustand = "Status:0" Then 
+        schalterstellung = "Aus"
+        AktorNeu = "1"
+        ButtonPicture1 = "Aus.jpg"
+        ButtonPicture2 = "red.jpg"
+      Else If zustand = "Status:1" Then
+        schalterstellung = "Ein"
+        AktorNeu = "0"
+        ButtonPicture1 = "Ein.jpg"
+        ButtonPicture2 = "green.jpg"
+      Endif
+  
+    If raum_neu <> raum_alt Then
+      raum_alt = raum_neu     
+      SeitenCode = SeitenCode & "   <tr>" & gb.CrLf
+      SeitenCode = SeitenCode & "    <td style=" & Chr(34) & "text-align: center; height: 53px;" & Chr(34) & " colspan=" & Chr(34) & "2" & Chr(34) & ">" & gb.CrLf
+      SeitenCode = SeitenCode & "     <span style=" & Chr(34) & "color: #ffffff; font-size: x-large;" & Chr(34) & ">" & raum_neu & "</span>" & gb.CrLf
+      SeitenCode = SeitenCode & "    </td>" & gb.CrLf
+      SeitenCode = SeitenCode & "   </tr>" & gb.CrLf
+    Endif
+    
+    If geraet <> "" And zustand <> "" Then
+    'hier geht das gerät los
+    SeitenCode = SeitenCode & "   <tr>" & gb.CrLf
+    SeitenCode = SeitenCode & "    <td style=" & Chr(34) & "text-align: center; " & Chr(34) & ">" & gb.CrLf
+     SeitenCode = SeitenCode & "     <img src=" & Chr(34) & ButtonPicture2 & Chr(34) & " alt=" & Chr(34) & "Tanzmaus" & Chr(34) & " width=" & Chr(34) & "40" & Chr(34) & " height=" & Chr(34) & "50" & Chr(34) & ">" & gb.crlf
+      SeitenCode = SeitenCode & "     <br>"
+    SeitenCode = SeitenCode & "     <span style=" & Chr(34) & "color: #ffffff; font-size: x-large;" & Chr(34) & ">" & geraet & "</span>" & gb.CrLf
+    SeitenCode = SeitenCode & "    </td>" & gb.CrLf
+    SeitenCode = SeitenCode & "    <td style=" & Chr(34) & "text-align: center;" & Chr(34) & ">" & gb.CrLf
+    SeitenCode = SeitenCode & "     <span style=" & Chr(34) & "color: #ffffff;" & Chr(34) & "><br>" & schalterstellung & "<br></span>" & gb.CrLf
+    SeitenCode = SeitenCode & "     <form action=" & Chr(34) & Chr(34) & " method=" & Chr(34) & "post" & Chr(34) & " >" & gb.CrLf
+    SeitenCode = SeitenCode & "     <input name=" & Chr(34) & "DeviceID" & geraeteID & "-" & AktorNeu & Chr(34) & " value=" & Chr(34) & "DeviceID" & geraeteID & "-" & AktorNeu & Chr(34) & " type=" & Chr(34) & "image" & Chr(34) & " src=" & Chr(34) & ButtonPicture1 & Chr(34) & " width=" & Chr(34) & "180" & Chr(34) & " height=" & Chr(34) & "60" & Chr(34) & "> " & gb.CrLf
+    SeitenCode = SeitenCode & "    </form>" & gb.CrLf
+    SeitenCode = SeitenCode & "    </td>" & gb.CrLf
+    SeitenCode = SeitenCode & "   </tr>" & gb.CrLf
+  End If
+  
+  'Next
+  
+  'Next
+  Until TreeView_Raumliste.MoveBelow()
+  'gerät ende
+ ' SeitenCode = SeitenCode & "<Input type=" & Chr(34) & "submit" & Chr(34) & " name=" & Chr(34) & "AktorAa1" & Chr(34) & " value =" & Chr(34) & AktorAa1 & Chr(34) & " /></form>"
+ ' SeitenCode = SeitenCode & "<input alt=" & Chr(34) & "Wohnzimmer Licht" & Chr(34) & " width=" & Chr(34) & "200" & Chr(34) & " height=" & Chr(34) & "50" & Chr(34) & " type=" & Chr(34) & "image" & Chr(34) & " src=" & Chr(34) & "button.png" & Chr(34) & " name=" & Chr(34) & "Bildbutton" & Chr(34) & ">"
+  SeitenCode = SeitenCode & "  </tbody>" & gb.CrLf
+  SeitenCode = SeitenCode & " </table>" & gb.CrLf
+  SeitenCode = SeitenCode & "</body>" & gb.CrLf
+  SeitenCode = SeitenCode & "</html>" & gb.CrLf
+  
+    'File.Save("../index.html", SeitenCode)  
+' Try Kill Application.Dir & "/myE-HomeControl/WebSite/index.html"
+   
+ ' File.Save(Application.Dir & "/myE-HomeControl/WebSite/index.html", SeitenCode)
+ Website = SeitenCode
+ 
+  
+End
+
+
+Public Sub WEB_btnWebServerListen_Click()
+
+   
+  'If WEB_cmbType.Index = 0 Then
+    'TCP
+    MyServerSocket.Type = Net.Internet
+    ' The port to listen to
+    MyServerSocket.Port = Val(WEB_txtPort.Text)
+    ' we start listening
+    MyServerSocket.Listen(WEB_cmbWebServerMaxClient.Index)
+ ' Else
+    ' UNIX
+ '   MyServerSocket.Type = Net.Local ' You could also use Net.Unix
+ '   MyServerSocket.Path = WEB_txtPath.Text
+ '   MyServerSocket.Listen(WEB_cmbWebServerMaxClient.Index)
+ ' End If
+  If MyServerSocket.Status = Net.Active Then 
+    ' listening
+'    WEB_btnWebServerListen.Enabled = False
+'    WEB_btnWebServerClose.Enabled = True
+'    WEB_cmbWebServerMaxClient.Enabled = False
+'    WEB_cmbType.Enabled = False
+'    WEB_txtPath.Enabled = False
+WEB_txtLog.Text = "Server Setup ...! OK \n" 
+  End If
+  
+  'CreateSite()
+  'CreateSite_new
+End
+
+
+
+Public Sub btn_DEBUG_WEB_LOG_LOESCHEN_Click()
+
+  WEB_txtLog.Text = Null 'Raumliste.Show
+  
+End
+
+
+
+Public Sub btn_Room_add_Click()
+
+  RoomID.text = RoomID.text + 1
+  DeviceID.Text = 0
+  TreeView_Raumliste.Add(RoomID.text, txb_RoomName.Text)
+
+End
+
+Public Sub btn_Teilnehmer_Add_Click()
+
+    Dim sGpioNr As String
+    Dim sGPIO_Text As String
+
+    Dim sFunkNr As String
+    
+    Dim sIO_ExpanderNr As String
+    
+    
+    Dim x As Integer
+
+   DeviceID.text = DeviceID.text + 1
+   TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text, txtTeilnehmerName.Text,, RoomID.text)
+   TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Status", "Status:" & "0",, RoomID.text & "-" & DeviceID.text)
+   
+    If Radio_SendeModus_GPIO.Value = True Then
+      'GPIO
+      sGPIO_Text = Combo_GPIO.Text
+      sGpioNr = Mid(Combo_GPIO.Text, 6, InStr(Combo_GPIO.Text, "(") - 6)
+      TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Pi-Ausgang", "GPIO:" & sGpioNr,, RoomID.text & "-" & DeviceID.text)
+      'gewählten port aus der liste der verfügbaren ports löschen
+      For x = 0 To Combo_GPIO.Count - 1
+        If Combo_GPIO[x].Text = sGPIO_Text Then
+          Combo_GPIO.Remove(x)
+          Exit
+        Endif
+      Next
+      
+    Else If Radio_SendeModus_FUNK.Value = True Then
+      '433 MHZ
+      sFunkNr = Mid(Combo_FUNK.Text, 6, Len(Combo_FUNK.text))
+      
+      TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Pi-Ausgang", "433Mhz:" & sFunkNr & ":" & txt_FUNK_HAUSCODE.Text & ":" & txt_FUNK_KANAL.Text,, RoomID.text & "-" & DeviceID.text)
+     Else If Radio_SendeModus_IO_EXPANDER.Value = True Then
+      'IO_Expander
+      sIO_ExpanderNr = Mid(Combo_IO_EXPANDER.Text, 6, Len(Combo_IO_EXPANDER.text))
+      TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Pi-Ausgang", "IO-EXPANDER:" & txt_FUNK_HAUSCODE.Text & ":" & txt_FUNK_KANAL.Text,, RoomID.text & "-" & DeviceID.text)
+    End If
+End
+
+Private Sub WalkTree(pTreeView As TreeView)
+ Dim sText As String
+ Dim sTmp As New Raum_V
+ 
+ Dim iItem As Integer
+ Dim liste As New ListBox(Me)
+
+ pTreeView.MoveFirst()
+ iItem = -1
+ 
+ Repeat
+  sText = sText & pTreeView.Item.Key & ", " & "'" & pTreeView.Item.Text & "'" & "\n"
+  If InStr(pTreeView.Item.Key, "-") <> 0 Then 
+    'Teilnehmer
+    liste.Add(pTreeView.Item.Text)
+    sTmp.Teilnehmer = liste
+  Else
+    sTmp.RaumName = pTreeView.Item.Text
+    iItem += 1
+    liste.Clear
+  Endif
+  
+  Raum[iItem] = sTmp
+
+  pTreeView.Item.Expanded = True
+  
+ Until pTreeView.MoveBelow()
+ 
+ 'TextArea.Text = sText
+
+End
+
+
+
+
+
+Public Sub TreeView_Raumliste_Click()
+
+
+If InStr(TreeView_Raumliste.Current.Key, "-") <> 0 Then 
+    'Teilnehmer+
+    RoomID.text = Mid(TreeView_Raumliste.Current.Key, 1, InStr(TreeView_Raumliste.Current.Key, "-") - 1)
+    DeviceID.Text = Mid(TreeView_Raumliste.Current.Key, InStr(TreeView_Raumliste.Current.Key, "-") + 1, Len(TreeView_Raumliste.Current.Key))
+    If InStr(DeviceID.Text, "-") Then
+     ' DeviceID2.Text = Mid(DeviceID.Text, InStr(DeviceID.Text, "-") + 1, Len(DeviceID.Text))
+      DeviceID.Text = Mid(TreeView_Raumliste.Current.Key, 1, InStr(TreeView_Raumliste.Current.Key, "-") - 1)
+      txt_AttribItem.Text = TreeView_Raumliste.Current.Text
+      Else
+      txtTeilnehmerName.Text = TreeView_Raumliste.Current.Text
+    Endif
+    
+    
+    
+    
+    
+  Else
+    txb_RoomName.Text = TreeView_Raumliste.Current.Text
+    RoomID.text = TreeView_Raumliste.Current.Key
+  Endif
+
+  
+
+End
+
+Public Sub Bnt_Raumliste_Speichern_Click()
+
+  Export_TreeView_List(DirBox1.Value & "/roomlist.conf", TreeView_Raumliste)
+
+End
+Public Sub Export_TreeView_List(sPath As String, lsb_URL As TreeView)
+ Dim $hFile As File
+ Dim sText As String
+
+ Dim iItem As Integer
+
+ lsb_URL.MoveFirst()
+ iItem = -1
+ 
+ If lsb_URL.Count = 0 Then
+  Return
+ Else
+  $hFile = Open sPath For Write Create
+  
+  Repeat
+  sText = sText & lsb_URL.Item.Key & ", " & "'" & lsb_URL.Item.Text & "'" & "\n"
+   
+  lsb_URL.Item.Expanded = True
+  
+ Until lsb_URL.MoveBelow()
+ 
+  Write #$hFile, sText As String '.List As Array
+  Close #$hFile
+  Catch 
+   Message.Error("Der Daten-Export war fehlerhaft!" & gb.NewLine & "Fehler: " & Error.Text)  
+ Endif
+End
+
+Public Sub Bnt_Raumliste_Laden_Click()
+
+  Dim sLine As String
+  Dim stmp As String
+  Dim Room As String
+  Dim sKey As String
+  Dim pkey As String
+  
+  Dim iItem As Integer
+  
+  Dim firstroom As Boolean = True
+  iItem = -1
+
+  sLine = File.Load(DirBox1.Value & "/roomlist.conf") ' Gambas 3.8.4
+   
+   Repeat
+   If firstroom = False Then 
+    stmp = Mid(sLine, 1, InStr(sline, "\n"))
+    sKey = Mid(stmp, 1, InStr(stmp, ",") - 1)
+    If InStr(skey, "-") <> 0 Then 
+      If InStr(skey, "Status") <> 0 Then 
+       pkey = Mid(stmp, 1, InStr(stmp, ",") - 1)
+       pkey = Mid(pkey, 1, Len(pkey) - 7)
+       room = Mid(stmp, InStr(stmp, ",") + 3, InStr(stmp, "'\n") - 14)
+      Else If InStr(skey, "Pi-Ausgang") <> 0 Then 
+       pkey = Mid(stmp, 1, InStr(stmp, ",") - 1)
+       pkey = Mid(pkey, 1, Len(pkey) - 11)
+       room = Mid(stmp, InStr(stmp, ",") + 3, InStr(stmp, "'\n") - 18)
+      Else
+       pkey = Mid(stmp, 1, InStr(stmp, "-") - 1)
+       room = Mid(stmp, InStr(stmp, ",") + 3, InStr(stmp, "'\n") - 7)
+      End If
+      TreeView_Raumliste.Add(sKey, room,, pkey)
+      sLine = Mid(sline, InStr(stmp, "\n") + 1, Len(sline))
+    Else
+    'neuer Raum
+     room = Mid(stmp, InStr(stmp, ",") + 3, InStr(stmp, "'\n") - 5)
+     TreeView_Raumliste.Add(sKey, room)
+     sLine = Mid(sline, InStr(stmp, "\n") + 1, Len(sline))
+    End If
+    
+   Else
+    iItem += 1
+    'Sline bereinigen die störenden zeichen am anfang!!!
+    sline = Mid(sline, InStr(sline, ",") - 1, Len(sline))
+    
+    stmp = Mid(sLine, 1, InStr(sline, "\n"))
+    sKey = Mid(stmp, 1, InStr(stmp, ",") - 1)
+    room = Mid(stmp, InStr(stmp, ",") + 3, InStr(stmp, "'\n") - 5)
+    firstroom = False
+    TreeView_Raumliste.Add(sKey, room)
+    sLine = Mid(sline, InStr(stmp, "\n") + 1, Len(sline))
+   End If
+   Until sLine = ""
+   
+  
+  Print sLine
+  
+
+End
+
+
+Public Sub Button6_Click()
+
+  
+   'TreeView1.Add(RoomID.text & "-" & DeviceID.text & "-" & "Status", "Status:" & txtTeilnehmerName2.Text,, RoomID.text & "-" & DeviceID.text)
+TreeView_Raumliste.Current.Text = txt_AttribItem.Text
+
+End
+
+
+Public Sub btn_DEBUG_gpio5_off_Click()
+
+  Shell "sudo /home/pi/wiringPi/gpio/./gpio -g Write 5 1"
+
+End
+
+Public Sub btn_DEBUG_INIT_GPIO_Click()
+
+ Shell "sudo /home/pi/wiringPi/gpio/./gpio export 5 out"
+
+End
+
+Public Sub Aktor_GPIOSender(Pin As String, Zustand As String)
+  
+  'Zustand zum Schalten umdrehen
+  '1 = 0
+  '0 = 1
+  If Zustand = 1 Then Zustand = 0 Else Zustand = 1
+  Shell "sudo /home/pi/wiringPi/gpio/./gpio -g Write " & Pin & " " & Zustand
+  
+End
+
+
+Public Sub btn_DEBUG_433Mhz_on_Click()
+
+ Aktor_FunkSender("BUS 1", "10101", 1, 1)
+ Sleep 0.3
+ Aktor_FunkSender("BUS 1", "10101", 2, 1)
+ Sleep 0.3
+ Aktor_FunkSender("BUS 1", "10101", 3, 1)
+ 
+ 'Shell "sudo /home/pi/raspberry-remote/./send " & txt_FUNK_HAUSCODE.text & " 1 1"
+
+End
+
+Public Sub btn_DEBUG_433Mhz_off_Click()
+
+ Aktor_FunkSender("BUS 1", "10101", 1, 0)
+ Sleep 0.3
+ Aktor_FunkSender("BUS 1", "10101", 2, 0)
+ Sleep 0.3
+ Aktor_FunkSender("BUS 1", "10101", 3, 0)
+  
+  
+  'Shell "sudo /home/pi/raspberry-remote/./send " & txt_FUNK_HAUSCODE.text & " 1 0"
+
+End
+
+Public Sub Aktor_FunkSender(BusNr As String, HausCode As String, Kanal As String, Zustand As String)
+  
+  Dim x As Integer
+  Dim sPort As String
+  
+  'Schaltport aus der Hardwareliste suchen 
+  
+  For x = 0 To GridView_Hardware.Rows.Count - 1
+    
+    If GridView_Hardware[x, 1].Text = "Funk 433 Mhz:" & BusNr Then
+      
+      sPort = GridView_Hardware[x, 0].Text
+      sPort = Mid(sPort, InStr(sPort, "Pin") + 4, 2)
+      
+      Shell "sudo /home/pi/raspberry-remote/./send -p" & sPort & " " & HausCode & " " & Kanal & " " & Zustand
+      
+      Exit
+    Endif
+    
+    
+  Next
+  
+  
+  
+  
+End
+
+
+Public Sub Form_Close()
+  
+   MyServerSocket.Close()
+  
+End
+
+Public Sub WEB_btnWebServerStop_Click()
+
+  MyServerSocket.Close()
+
+End
+
+
+
+
+Public Sub GridView_Hardware_Click()
+Dim x As Integer
+
+  If txtbox_Hardware.Text <> "" Then
+    For x = 0 To GridView_Hardware.Rows.Count - 1 
+      
+      GridView_Hardware[x, 0].Foreground = Color.Black
+      GridView_Hardware[x, 0].Font.Bold = False
+     
+    Next
+     
+  Endif
+  
+  
+  txtbox_Hardware.Text = GridView_Hardware.Current.Text
+  GridView_Hardware.Current.Font.Bold = True
+  GridView_Hardware.Current.Foreground = Color.Blue
+  
+
+End
+
+
+Public Sub ComboBox_Hardware_Eigenschaft_Click()
+
+    'GridView_Hardware[GridView_Hardware.row, 1].Text = ComboBox_Hardware_Eigenschaft.Text & ":" & SpinBox1.Text
+    'txtbox_Hardware.Text = ""
+    'ComboBox_Hardware_Eigenschaft.Text = ""
+    'GridView_Hardware.Current.Foreground = Color.Black
+    'GridView_Hardware.Current.Font.Bold = False
+    If ComboBox_Hardware_Eigenschaft.Text <> "Direkt GPIO" Then
+      Spinbox_HARDWARE_GRUPPE.Enabled = True
+    Else
+      Spinbox_HARDWARE_GRUPPE.Enabled = False
+    End If
+
+End
+
+Public Sub RB_HardwareRev_2_Click()
+
+Dim x As Integer
+
+GridView_Hardware.Clear
+txtbox_Hardware.Text = ""
+
+'If RB_HardwareRev_2.Value = True Then
+  GridView_Hardware[0, 0].Text = "GPIO 04(wiring Pi Pin 07)"
+  GridView_Hardware[1, 0].Text = "GPIO 17(wiring Pi Pin 11)"
+  GridView_Hardware[2, 0].Text = "GPIO 18(wiring Pi Pin 12)"
+  GridView_Hardware[3, 0].Text = "GPIO 27(wiring Pi Pin 13)"
+  GridView_Hardware[4, 0].Text = "GPIO 22(wiring Pi Pin 15)"
+  GridView_Hardware[5, 0].Text = "GPIO 23(wiring Pi Pin 16)"
+  GridView_Hardware[6, 0].Text = "GPIO 24(wiring Pi Pin 18)"
+  GridView_Hardware[7, 0].Text = "GPIO 25(wiring Pi Pin 22)"
+  GridView_Hardware[8, 0].Text = "GPIO 05(wiring Pi Pin 29)"
+  GridView_Hardware[9, 0].Text = "GPIO 06(wiring Pi Pin 31)"
+  GridView_Hardware[10, 0].Text = "GPIO 12(wiring Pi Pin 32)"
+  GridView_Hardware[11, 0].Text = "GPIO 13(wiring Pi Pin 33)"
+  GridView_Hardware[12, 0].Text = "GPIO 19(wiring Pi Pin 35)"
+  GridView_Hardware[13, 0].Text = "GPIO 16(wiring Pi Pin 36)"
+  GridView_Hardware[14, 0].Text = "GPIO 26(wiring Pi Pin 37)"
+  GridView_Hardware[15, 0].Text = "GPIO 20(wiring Pi Pin 38)"
+  GridView_Hardware[16, 0].Text = "GPIO 21(wiring Pi Pin 40)"
+'Endif
+
+For x = 0 To GridView_Hardware.Rows.Count - 1
+  
+  GridView_Hardware[x, 0].Foreground = Color.Black
+  GridView_Hardware[x, 1].Foreground = Color.Black
+  
+Next
+
+End
+
+Public Sub RB_HardwareRev_1_Click()
+
+Dim x As Integer
+
+GridView_Hardware.Clear
+txtbox_Hardware.Text = ""
+'If RB_HardwareRev_1.Value = True Then
+  GridView_Hardware[0, 0].Text = "GPIO 04(wiring Pi Pin 07)"
+  GridView_Hardware[1, 0].Text = "GPIO 17(wiring Pi Pin 11)"
+  GridView_Hardware[2, 0].Text = "GPIO 18(wiring Pi Pin 12)"
+  GridView_Hardware[3, 0].Text = "GPIO 27(wiring Pi Pin 13)"
+  GridView_Hardware[4, 0].Text = "GPIO 22(wiring Pi Pin 15)"
+  GridView_Hardware[5, 0].Text = "GPIO 23(wiring Pi Pin 16)"
+  GridView_Hardware[6, 0].Text = "GPIO 24(wiring Pi Pin 18)"
+  GridView_Hardware[7, 0].Text = "GPIO 10(wiring Pi Pin 19)"
+  GridView_Hardware[8, 0].Text = "GPIO 09(wiring Pi Pin 21)"
+  GridView_Hardware[9, 0].Text = "GPIO 25(wiring Pi Pin 22)"
+  GridView_Hardware[10, 0].Text = "GPIO 11(wiring Pi Pin 23)"
+  GridView_Hardware[11, 0].Text = "GPIO 08(wiring Pi Pin 24)"
+  GridView_Hardware[12, 0].Text = "GPIO 07(wiring Pi Pin 26)"
+'Endif
+
+For x = 0 To GridView_Hardware.Rows.Count - 1
+  
+  GridView_Hardware[x, 0].Foreground = Color.Black
+  GridView_Hardware[x, 1].Foreground = Color.Black
+  
+Next
+
+End
+
+Public Sub Tab_Menu_Click()
+Dim x As Integer
+  If txtbox_Hardware.Text <> "" Then
+    For x = 0 To GridView_Hardware.Rows.Count - 1 
+      
+      GridView_Hardware[x, 0].Foreground = Color.Black
+      GridView_Hardware[x, 0].Font.Bold = False
+      'GridView1.Current.Foreground = Color.Black
+      
+    Next
+  Endif
+
+End
+
+Public Sub btn_uebergabe_Click()
+
+'Funk 433 Mhz
+'Direkt GPIO
+'IO - MOSI
+'IO - MISO
+'IO - SCK
+'IO - CS
+Dim x As Integer
+
+Combo_GPIO.Clear
+Combo_FUNK.Clear
+Combo_IO_EXPANDER.Clear
+
+
+  For x = 0 To GridView_Hardware.Rows.Count - 1
+    
+    If InStr(GridView_Hardware[x, 1].Text, "Direkt GPIO") <> 0 Then
+      Combo_GPIO.Add(GridView_Hardware[x, 0].Text)
+    Endif
+    
+    If InStr(GridView_Hardware[x, 1].Text, "Funk 433 Mhz") <> 0 Then
+      Combo_FUNK.Add("Funk " & Mid(GridView_Hardware[x, 1].Text, InStr(GridView_Hardware[x, 1].Text, "BUS "), Len(GridView_Hardware[x, 1].Text)))
+      '(GridView_Hardware[x, 0].Text)
+    Endif
+    
+    If InStr(GridView_Hardware[x, 1].Text, "IO-MOSI") <> 0 Then
+      Combo_IO_EXPANDER.Add("IO-Expander " & Mid(GridView_Hardware[x, 1].Text, InStr(GridView_Hardware[x, 1].Text, "BUS"), Len(GridView_Hardware[x, 1].Text)))
+    Endif
+    
+  Next
+
+End
+
+Public Sub Button3_Click()
+
+  Dim sHardwareGruppe As String
+  
+  If Spinbox_HARDWARE_GRUPPE.Enabled = True Then
+    
+    sHardwareGruppe = ":BUS " & Spinbox_HARDWARE_GRUPPE.Text
+    
+  Endif
+  
+   GridView_Hardware[GridView_Hardware.row, 1].Text = ComboBox_Hardware_Eigenschaft.Text & sHardwareGruppe
+    txtbox_Hardware.Text = ""
+    ComboBox_Hardware_Eigenschaft.Text = ""
+    GridView_Hardware.Current.Foreground = Color.Black
+    GridView_Hardware.Current.Font.Bold = False
+    Spinbox_HARDWARE_GRUPPE.Enabled = False
+
+End
+
+Public Sub btn_Hardware_Speichern_Click()
+
+  Export_GridView_List(DirBox1.Value & "/hardware.conf", GridView_Hardware)
+
+End
+
+Public Sub Export_GridView_List(sPath As String, Grid As GridView)
+ Dim $hFile As File
+ Dim sText As String
+
+ Dim iItem As Integer
+
+ 'lsb_URL.MoveFirst()
+ iItem = -1
+ 
+ If Grid.Rows.Count = 0 Then
+  Return
+ Else
+  $hFile = Open sPath For Write Create
+  
+  'Repeat
+  For iItem = 0 To Grid.Rows.Count - 1 
+    sText = sText & Grid[iItem, 0].Text & ", " & "'" & Grid[iItem, 1].Text & "'" & "\n"
+  Next
+  
+  Write #$hFile, sText As String '.List As Array
+  Close #$hFile
+  Catch 
+   Message.Error("Der Daten-Export war fehlerhaft!" & gb.NewLine & "Fehler: " & Error.Text)  
+ Endif
+End
+
+
+
+Public Sub btn_Hardware_Laden_Click()
+
+   Dim sLine As String
+  Dim sIndex As String
+  Dim sHardware As String
+  Dim sGruppe As String
+'  Dim pkey As String
+  Dim x As Integer
+  Dim iItem As Integer
+  
+ ' Dim firstroom As Boolean = True
+  iItem = -1
+  'sLine = File.Load(system.home & "/test.txt")
+  sLine = File.Load(DirBox1.Value & "/hardware.conf")
+  
+   Print sLine
+   'die ersten beiden störzeichen rausholen
+   sLine = Mid(sLine, InStr(sLine, "GPIO"), Len(sLine))
+   
+   
+   Repeat
+     sIndex = Mid(sLine, 1, InStr(sline, "\n"))
+    
+     sHardware = Mid(sIndex, 1, InStr(sline, ",") - 1)
+     sGruppe = Mid(sIndex, InStr(sline, "'") + 1, InStr(Mid(sIndex, Len(sHardware) + 4), "'") - 1)
+     
+     For x = 0 To GridView_Hardware.Rows.Count - 1
+       If GridView_Hardware[x, 0].Text = sHardware Then
+         GridView_Hardware[x, 1].Text = sGruppe
+         Exit 
+       Endif
+     Next
+     
+     sLine = Mid(sLine, Len(sIndex) + 1, Len(sLine))
+   Until sLine = ""
+   
+btn_uebergabe_Click
+
+End
+
+Private Sub KonfigLaden()
+
+'File.Name = DirBox1.Value & "/hardware.conf"
+  If Exist(DirBox1.Value & "/hardware.conf") Then
+    ToggleButton1.Background = Color.Green
+    btn_Hardware_Laden_Click
+  Else
+    ToggleButton1.Background = Color.Red
+  Endif
+  
+   If Exist(DirBox1.Value & "/roomlist.conf") Then
+    ToggleButton2.Background = Color.Green
+    Bnt_Raumliste_Laden_Click
+  Else
+    ToggleButton2.Background = Color.Red
+  Endif
+  
+   If Exist(DirBox1.Value & "/io-expander.conf") Then
+    ToggleButton3.Background = Color.Green
+    btn_IO_EXPANDER_Laden_Click
+  Else
+    ToggleButton3.Background = Color.Red
+  Endif
+
+End
+
+
+
+
+Public Sub btn_Teilnehmer_Delete_Click()
+
+  TreeView_Raumliste.Remove(TreeView_Raumliste.Current.Key)
+
+End
+
+Public Sub btn_Room_delete_Click()
+
+  TreeView_Raumliste.Remove(TreeView_Raumliste.Current.Key)
+
+End
+
+Private Sub Raumeditor_Radiobutton_Steuerung(gpio As Boolean, funk As Boolean, io_expander As Boolean)
+  'Menu einträge für den Raumeditor Steuern Enable / Disable
+  Combo_GPIO.Enabled = gpio
+  
+  Combo_FUNK.Enabled = funk
+  txt_FUNK_HAUSCODE.Enabled = funk
+  txt_FUNK_KANAL.Enabled = funk
+  
+  Combo_IO_EXPANDER.Enabled = io_expander
+  txt_IO_EXPANDER_ADRESSE.Enabled = io_expander
+  txt_IO_EXPANDER_KANAL.Enabled = io_expander
+  
+End
+
+
+Public Sub Radio_SendeModus_IO_EXPANDER_Click()
+
+  
+  Dim sValueKey As String
+  Dim SValueText As String
+  Dim sParentKey As String
+  Dim sSubKey As String
+  Dim sKey_Text As String
+  Dim sAttribut As String
+  
+  Dim x As Integer
+
+  Raumeditor_Radiobutton_Steuerung(False, False, True)
+  
+  
+  'Wenn der IO-Expander ausgewählt wird soll die Bus-Liste durchsucht werden
+  'und alle verfügbaren chips aufgelistet werden
+  'Combo_IO_EXPANDER = Bus-Liste Parentkey (Strang)
+  'Combo_IO_EXPANDER_ADRESSE = Bus-Liste Sub Key (Chip)
+  'TreeView_IO_EXPANDER_List = Quelle
+  
+  TreeView_IO_EXPANDER_List.MoveFirst()
+  
+  Repeat
+    
+    sValueKey = TreeView_IO_EXPANDER_List.Item.Key
+    sValueText = TreeView_IO_EXPANDER_List.Item.Text
+    
+    sValueText = Replace(sValueText, "Nr:", "")
+    sValueText = UCase(sValueText)
+    
+    
+    'sParentKey = TreeView_IO_EXPANDER_List.Item.ParentKey
+    
+   ' If InStr(Combo_IO_EXPANDER.Text, sValueText) <> 0 Then
+    
+     'jier ist der gesuchte busstrang gefunden
+     
+     If sParentKey <> "" Then
+       
+        If InStr(Combo_IO_EXPANDER.Text, UCase(TreeView_IO_EXPANDER_List[sParentKey].Text)) <> 0 Then
+        'nächste Zeile suchen
+        
+        If InStr(sValueText, "ADRESSE") <> 0 Then
+          
+          Combo_IO_EXPANDER_ADRESSE.Add(sValueText)
+          
+        End If
+          
+         'TreeView_IO_EXPANDER_List.Item.Expanded = True
+        'es kann pro strang nicht mehr als 8 chips geben
+        ' For x = 0 To 7 
+        '   sValueKey = TreeView_IO_EXPANDER_List[sParentKey & "-" & x].Key
+        '   sValueText = TreeView_IO_EXPANDER_List[sParentKey & "-" & x].Text
+        ' Next
+        Endif
+     Else
+       sParentKey = TreeView_IO_EXPANDER_List.Item.ParentKey
+       'TreeView_IO_EXPANDER_List.Item.Expanded = True
+     Endif
+    
+    TreeView_IO_EXPANDER_List.Item.Expanded = True
+    
+    
+    
+  Until TreeView_IO_EXPANDER_List.MoveBelow()
+  
+  
+  
+
+End
+Public Sub Radio_SendeModus_FUNK_Click()
+
+  Raumeditor_Radiobutton_Steuerung(False, True, False)
+  
+End
+
+
+Public Sub Button2_Click()
+
+  Dim sParentkey As String
+  Dim sKey As String
+
+  Dim sBildRaum As Picture
+  Dim sBildRelaisKarte As Picture
+  Dim sBildFunk As Picture
+  
+  Dim sGeraeteKlasse As String
+  
+  
+  sBildRaum = picResize("/usr/share/openclipart/png/computer/home6.png")
+  sBildRelaisKarte = picResize("/home/pi/mini-Webserver/karte.png")
+  sBildFunk = picResize("/usr/share/openclipart/png/signs_and_symbols/RadiationsNonIonisantes.png")
+  
+  '/usr/share/openclipart/png/signs_and_symbols/obligation_generale_yves_01.png
+  '/usr/share/openclipart/png/signs_and_symbols/RadiationsNonIonisantes.png         <---Funk
+  '/usr/share/openclipart/png/computer/buttons/pulsante_02_architetto_f_01.png
+  '/usr/share/openclipart/png/computer/home6.png
+ ' sBild = Picture[DirBox1.Value & "/raum.png"]
+  ' sBild = Picture[DirBox1.Value & "/geraet.png"]
+  TreeView_Aktion.Clear
+  
+  
+  TreeView_Raumliste.MoveFirst()
+  
+  Repeat
+    
+    If InStr(TreeView_Raumliste.Item.Key, "-") = 0 Then
+     
+      TreeView_Aktion.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text, sBildRaum) 'DirBox1.Value & "/raum.png"])
+    Else
+      'wenn ein minus drin is mindestens Sub Key
+      'wenn dann zusätzlich noch eines der Schlüsselwörter drin ist Sub-Sub key
+      
+      If InStr(TreeView_Raumliste.Item.Key, "Status") <> 0 Then
+        sParentkey = Mid(TreeView_Raumliste.Item.Key, 1, InStr(TreeView_Raumliste.Item.Key, "Status") - 2)
+        sKey = TreeView_Raumliste.Item.Key
+        TreeView_Aktion.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text,, sParentkey)
+      Else If InStr(TreeView_Raumliste.Item.Key, "Pi-Ausgang") <> 0 Then
+        sParentkey = Mid(TreeView_Raumliste.Item.Key, 1, InStr(TreeView_Raumliste.Item.Key, "Pi-Ausgang") - 2)
+        sKey = TreeView_Raumliste.Item.Key
+        TreeView_Aktion.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text,, sParentkey)
+      Else
+        'Geräte
+        '
+        sParentkey = Mid(TreeView_Raumliste.Item.Key, 1, InStr(TreeView_Raumliste.Item.Key, "-") - 1)
+        sKey = TreeView_Raumliste.Item.Key
+        sGeraeteKlasse = TreeView_Raumliste[sKey & "-Pi-Ausgang"].Text
+        
+        If InStr(sGeraeteKlasse, "GPIO") <> 0 Then
+          TreeView_Aktion.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text, sBildRelaisKarte, sParentkey)
+        Else If InStr(sGeraeteKlasse, "433Mhz") <> 0 Then
+          TreeView_Aktion.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text, sBildFunk, sParentkey)
+        Endif
+        
+      Endif
+      
+     
+      
+    Endif
+
+  
+   
+  TreeView_Raumliste.Item.Expanded = True
+  
+ Until TreeView_Raumliste.MoveBelow()
+
+End
+Private Function picResize(sPicPath As String) As Picture
+Dim img As New Image
+ 
+   img = Image.Load(sPicPath)
+   Return img.Stretch(30, 30).Picture  ' Höhe und Breite des Picture hier einstellen
+ 
+End
+
+
+Public Sub Radio_SendeModus_GPIO_Click()
+
+  Combo_GPIO.Enabled = True
+  Combo_FUNK.Enabled = False
+  Combo_IO_EXPANDER.Enabled = False
+  
+  txt_FUNK_HAUSCODE.Enabled = False
+  txt_FUNK_KANAL.Enabled = False
+  txt_IO_EXPANDER_ADRESSE.Enabled = False
+  txt_IO_EXPANDER_KANAL.Enabled = False
+
+End
+
+
+
+Public Sub TreeView_Aktion_Click()
+  Dim sParentkey As String
+  'Dim sKey As String
+  Dim sStatus As Integer
+  Dim sAusgang As String
+  
+  Dim sUebertragung As String
+  Dim sBusNr As String
+  Dim sHausCode As String
+  Dim sKanal As String
+
+    
+    If InStr(TreeView_Aktion.Item.Key, "-") = 0 Then
+ '     TreeView2.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text)
+    Else
+      'wenn ein minus drin is mindestens Sub Key
+      'wenn dann zusätzlich noch eines der Schlüsselwörter drin ist Sub-Sub key
+      
+      If InStr(TreeView_Aktion.Item.Key, "Status") <> 0 Then
+      
+       sParentkey = Mid(TreeView_Aktion.Item.Key, 1, InStr(TreeView_Aktion.Item.Key, "Status") - 2)
+      '  sKey = Mid(TreeView_Raumliste.Item.Key,1,
+     '   TreeView2.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text,, sParentkey)
+        sStatus = Right$(TreeView_Raumliste[TreeView_Aktion.Item.Key].Text, 1)
+        sAusgang = TreeView_Raumliste[sParentkey & "-Pi-Ausgang"].Text
+        If sStatus = 0 Then
+          'einschalten
+          TreeView_Raumliste[TreeView_Aktion.Item.Key].Text = "Status:1"
+          TreeView_Aktion.Current.Text = "Status:1"
+          sUebertragung = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
+          If sUebertragung = "433Mhz" Then
+            sAusgang = Mid(sAusgang, Len(sUebertragung) + 2, Len(sAusgang))
+            sBusNr = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
+            sAusgang = Mid(sAusgang, Len(sBusNr) + 2, Len(sAusgang))
+            sHausCode = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
+            sKanal = Mid(sAusgang, Len(sHausCode) + 2, Len(sAusgang))
+          
+            Aktor_FunkSender(sBusNr, sHausCode, sKanal, "1")
+          End If
+          
+        Else
+          'ausschalten
+          TreeView_Raumliste[TreeView_Aktion.Item.Key].Text = "Status:0"
+          TreeView_Aktion.Current.Text = "Status:0"
+          sUebertragung = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
+          If sUebertragung = "433Mhz" Then
+            sAusgang = Mid(sAusgang, Len(sUebertragung) + 2, Len(sAusgang))
+            sBusNr = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
+            sAusgang = Mid(sAusgang, Len(sBusNr) + 2, Len(sAusgang))
+            sHausCode = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
+            sKanal = Mid(sAusgang, Len(sHausCode) + 2, Len(sAusgang))
+          
+            Aktor_FunkSender(sBusNr, sHausCode, sKanal, "0")
+          End If
+        Endif
+     
+     
+     
+     
+     
+      Else If InStr(TreeView_Aktion.Item.Key, "Pi-Ausgang") <> 0 Then
+       sParentkey = Mid(TreeView_Aktion.Item.Key, 1, InStr(TreeView_Aktion.Item.Key, "Pi-Ausgang") - 2)
+     '   sKey = TreeView_Raumliste.Item.Key
+     '   TreeView2.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text,, sParentkey)
+      Else
+        sParentkey = Mid(TreeView_Aktion.Item.Key, 1, InStr(TreeView_Aktion.Item.Key, "-") - 1)
+    '    sKey = TreeView_Raumliste.Item.Key
+     '   TreeView2.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text,, sParentkey)
+      Endif
+      
+     
+      
+    Endif
+
+  
+   
+  'TreeView_Raumliste.Item.Expanded = True
+  
+' Until TreeView_Raumliste.MoveBelow()
+End
+
+
+
+Public Sub btn_DEBUG_IO_EXPANDER_READ_A_Click()
+
+  InPortA_Bin.text = MCP_readSPI_String(66, SPI_GPIOA)     'Ausgangswert in Binär ausgeben
+  InPortB_Bin.text = MCP_readSPI_String(66, SPI_GPIOB)     'Ausgangswert in Binär ausgeben
+
+End
+
+Public Sub Btn_ADD_BUS_Click()
+
+  TreeView_IO_EXPANDER_List.Add(Spinbox_Bus_Nr.Value, "Bus " & Spinbox_Bus_Nr.Value)
+
+End
+
+Public Sub Btn_Add_Chip_Click()
+
+Dim sModulart_PortA As String
+Dim sModulart_PortB As String
+
+If Rb_IO_EXPANDER_PORT_A_Modus_Eingang.Value = True Then sModulart_PortA = "Eingang"
+If Rb_IO_EXPANDER_PORT_A_Modus_Ausgang.Value = True Then sModulart_PortA = "Ausgang"
+
+If Rb_IO_EXPANDER_PORT_B_Modus_Eingang.Value = True Then sModulart_PortB = "Eingang"
+If Rb_IO_EXPANDER_PORT_B_Modus_Ausgang.Value = True Then sModulart_PortB = "Ausgang"
+
+  TreeView_IO_EXPANDER_List.Add(Spinbox_Bus_Nr.Value & "-" & Spinbox_IO_EXPANDER_Adresse.Value, txt_IO_EXPANDER_Bezeichnung.Text,, Spinbox_Bus_Nr.Value)
+  TreeView_IO_EXPANDER_List.Add(Spinbox_Bus_Nr.Value & "-" & Spinbox_IO_EXPANDER_Adresse.Value & ":Adresse", "Adresse:" & Spinbox_IO_EXPANDER_Adresse.Value,, Spinbox_Bus_Nr.Value & "-" & Spinbox_IO_EXPANDER_Adresse.Value)
+  TreeView_IO_EXPANDER_List.Add(Spinbox_Bus_Nr.Value & "-" & Spinbox_IO_EXPANDER_Adresse.Value & ":Modulart_PortA", "Modulart Port A:" & sModulart_PortA,, Spinbox_Bus_Nr.Value & "-" & Spinbox_IO_EXPANDER_Adresse.Value)
+  TreeView_IO_EXPANDER_List.Add(Spinbox_Bus_Nr.Value & "-" & Spinbox_IO_EXPANDER_Adresse.Value & ":Modulart_PortB", "Modulart Port B:" & sModulart_PortB,, Spinbox_Bus_Nr.Value & "-" & Spinbox_IO_EXPANDER_Adresse.Value)
+'RadioButton1
+End
+
+Public Sub btn_IO_EXPANDER_Speichern_Click()
+
+  Export_TreeView_List(DirBox1.Value & "/io-expander.conf", TreeView_IO_EXPANDER_List)
+
+End
+
+Public Sub btn_IO_EXPANDER_Laden_Click()
+
+  Dim sLine As String
+  Dim stmp As String
+  Dim Room As String
+  Dim sKey As String
+  Dim pkey As String
+  
+  Dim iItem As Integer
+  
+  Dim firstroom As Boolean = True
+  iItem = -1
+  'sLine = File.Load(system.home & "/test.txt")
+  sLine = File.Load(DirBox1.Value & "/io-expander.conf") ' Gambas 3.8.4
+   
+   Repeat
+   If firstroom = False Then 
+    stmp = Mid(sLine, 1, InStr(sline, "\n"))
+    sKey = Mid(stmp, 1, InStr(stmp, ",") - 1)
+    If InStr(skey, "-") <> 0 Then 
+      If InStr(skey, "Adresse") <> 0 Then 
+       pkey = Mid(stmp, 1, InStr(stmp, ":") - 1)
+      ' pkey = Mid(pkey, 1, Len(pkey) - 7)
+       'stmp = Mid(stmp, Len(pkey) + 1, Len(stmp))
+       'pkey = Mid(stmp, 1, InStr(stmp, "-") - 1)
+       room = Mid(stmp, InStr(stmp, "'") + 1, InStr(stmp, "'\n") - 15)
+      Else If InStr(skey, "Modulart") <> 0 Then 
+       pkey = Mid(stmp, 1, InStr(stmp, ":") - 1)
+    '  pkey = Mid(pkey, 1, Len(pkey) - 11)
+       'stmp = Mid(stmp, Len(pkey) + 1, Len(stmp))
+       'pkey = Mid(stmp, 1, InStr(stmp, "-") - 1)
+       room = Mid(stmp, InStr(stmp, "'") + 1, InStr(stmp, "'\n") - 16)
+       room = Mid(room, 1, InStr(room, "'") - 1)
+      Else
+       pkey = Mid(stmp, 1, InStr(stmp, "-") - 1)
+       room = Mid(stmp, InStr(stmp, ",") + 3, InStr(stmp, "'\n") - 7)
+      End If
+      TreeView_IO_EXPANDER_List.Add(sKey, room,, pkey)
+      sLine = Mid(sline, InStr(stmp, "\n") + 1, Len(sline))
+    Else
+    'neuer Raum
+     room = Mid(stmp, InStr(stmp, ",") + 3, InStr(stmp, "'\n") - 5)
+     TreeView_IO_EXPANDER_List.Add(sKey, room)
+     sLine = Mid(sline, InStr(stmp, "\n") + 1, Len(sline))
+    End If
+    
+   Else
+    iItem += 1
+    'Sline bereinigen die störenden zeichen am anfang!!!
+    sline = Mid(sline, InStr(sline, ",") - 1, Len(sline))
+    
+    stmp = Mid(sLine, 1, InStr(sline, "\n"))
+    sKey = Mid(stmp, 1, InStr(stmp, ",") - 1)
+    room = Mid(stmp, InStr(stmp, ",") + 3, InStr(stmp, "'\n") - 5)
+    firstroom = False
+    TreeView_IO_EXPANDER_List.Add(sKey, room)
+    sLine = Mid(sline, InStr(stmp, "\n") + 1, Len(sline))
+   End If
+   Until sLine = ""
+   
+   'txb_RoomName.Text = room
+  
+  Print sLine
+  
+
+End
+
+Public Sub Tab_Konfig_Click()
+
+  
+
+End
+
+Public Sub Combo_IO_EXPANDER_ADRESSE_Click()
+
+  'Wenn der IO-Expander ausgewählt wird soll die Bus-Liste durchsucht werden
+  'und alle verfügbaren chips auflisten
+  'Combo_IO_EXPANDER = Bus-Liste Parentkey (Strang)
+  'Combo_IO_EXPANDER_ADRESSE = Bus-Liste Sub Key (Chip)
+  
+End
+
+Public Sub Button1_Click()
+
+  MCP_sendSPI(64, SPI_GPIOA, &X000000000) 
+  MCP_sendSPI(64, SPI_GPIOB, &X000000000) 
+  
+
+End
+
+Public Sub Button4_Click()
+
+  MCP_sendSPI(64, SPI_GPIOA, &X11111111) 
+  MCP_sendSPI(64, SPI_GPIOB, &X111111111) 
+
+End
+
+Public Sub DrawingArea1_Draw()
+
+  
+
+End
+
+Public Sub DrawingArea1_DblClick()
+
+  DrawingArea1.Hovere
+
+End

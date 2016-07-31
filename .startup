@@ -1,0 +1,19 @@
+FMain
+mini-Webserver GPIO FUNK IO-Expander
+0
+0
+0.0.10
+
+gb.image
+gb.cairo
+gb.gui.qt
+gb.form
+gb.clipper
+gb.complex
+gb.compress
+gb.compress.bzlib2
+gb.net
+gb.net.curl
+gb.mime
+gb.net.pop3
+

@@ -1,0 +1,10 @@
+' Gambas class file
+
+Public Const SPI_SLAVE_ADDR_ONE As Integer = 64 'Val("&H" & "0x40 ") '64 ' Hex : 0x40"
+Public Const SPI_IOCTRL As Integer = 10 '0 x0A
+Public Const SPI_IODIRA As Integer = 0 '0 x00
+Public Const SPI_IODIRB As Integer = 1 ' 0 x01
+Public Const SPI_GPIOA As Integer = 18 '0 x12
+Public Const SPI_GPIOB As Integer = 19 '0 x13
+Public Const SPI_SLAVE_WRITE As Integer = 0 '0 x00
+Public Const SPI_SLAVE_READ As Integer = 1 '0 x01
