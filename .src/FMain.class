@@ -968,8 +968,9 @@ Public Sub btn_Teilnehmer_Add_Click()
       TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Pi-Ausgang", "433Mhz:" & sFunkNr & ":" & txt_FUNK_HAUSCODE.Text & ":" & txt_FUNK_KANAL.Text,, RoomID.text & "-" & DeviceID.text)
      Else If Radio_SendeModus_IO_EXPANDER.Value = True Then
       'IO_Expander
+      'Combo_IO_EXPANDER
       sIO_ExpanderNr = Mid(Combo_IO_EXPANDER.Text, 6, Len(Combo_IO_EXPANDER.text))
-      TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Pi-Ausgang", "IO-EXPANDER:" & Combo_IO_EXPANDER_ADRESSE.Text & " Kanal:" & txt_IO_EXPANDER_KANAL.Text,, RoomID.text & "-" & DeviceID.text)
+      TreeView_Raumliste.Add(RoomID.text & "-" & DeviceID.text & "-" & "Pi-Ausgang", Combo_IO_EXPANDER.Text & ":" & Combo_IO_EXPANDER_ADRESSE.Text & " Kanal:" & txt_IO_EXPANDER_KANAL.Text,, RoomID.text & "-" & DeviceID.text)
     End If
 End
 
@@ -1527,7 +1528,7 @@ Private Sub Raumeditor_Radiobutton_Steuerung(gpio As Boolean, funk As Boolean, i
   txt_FUNK_KANAL.Enabled = funk
   
   Combo_IO_EXPANDER.Enabled = io_expander
-  txt_IO_EXPANDER_ADRESSE.Enabled = io_expander
+  Combo_IO_EXPANDER_ADRESSE.Enabled = io_expander
   txt_IO_EXPANDER_KANAL.Enabled = io_expander
   
 End
@@ -1619,6 +1620,7 @@ Public Sub Button2_Click()
   Dim sBildRaum As Picture
   Dim sBildRelaisKarte As Picture
   Dim sBildFunk As Picture
+  Dim sBildIOEXPANDER As Picture
   
   Dim sGeraeteKlasse As String
   
@@ -1626,6 +1628,7 @@ Public Sub Button2_Click()
   sBildRaum = picResize("/usr/share/openclipart/png/computer/home6.png")
   sBildRelaisKarte = picResize("/home/pi/mini-Webserver/karte.png")
   sBildFunk = picResize("/usr/share/openclipart/png/signs_and_symbols/RadiationsNonIonisantes.png")
+  sBildIOEXPANDER = picResize("/usr/share/openclipart/png/signs_and_symbols/weather/lightning_icon_benji_par_01.png")
   
   '/usr/share/openclipart/png/signs_and_symbols/obligation_generale_yves_01.png
   '/usr/share/openclipart/png/signs_and_symbols/RadiationsNonIonisantes.png         <---Funk
@@ -1663,9 +1666,15 @@ Public Sub Button2_Click()
         sGeraeteKlasse = TreeView_Raumliste[sKey & "-Pi-Ausgang"].Text
         
         If InStr(sGeraeteKlasse, "GPIO") <> 0 Then
+          'GPIO TEILNEHMER MIT HARDWARE-BILD HINZUFÜGEn
           TreeView_Aktion.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text, sBildRelaisKarte, sParentkey)
         Else If InStr(sGeraeteKlasse, "433Mhz") <> 0 Then
+          'FUNK TEILNEHMER MIT FUNK-BILD HINZUFÜGEN
           TreeView_Aktion.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text, sBildFunk, sParentkey)
+        Else If InStr(sGeraeteKlasse, "IO-Expander") <> 0 Then
+          'IO_EXPANDER MIT IO BILD HINZUFÜGEN
+           TreeView_Aktion.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text, sBildIOEXPANDER, sParentkey)
+          
         Endif
         
       Endif
@@ -1692,14 +1701,7 @@ End
 
 Public Sub Radio_SendeModus_GPIO_Click()
 
-  Combo_GPIO.Enabled = True
-  Combo_FUNK.Enabled = False
-  Combo_IO_EXPANDER.Enabled = False
-  
-  txt_FUNK_HAUSCODE.Enabled = False
-  txt_FUNK_KANAL.Enabled = False
-  txt_IO_EXPANDER_ADRESSE.Enabled = False
-  txt_IO_EXPANDER_KANAL.Enabled = False
+ Raumeditor_Radiobutton_Steuerung(True, False, False)
 
 End
 
@@ -1716,6 +1718,9 @@ Public Sub TreeView_Aktion_Click()
   Dim sHausCode As String
   Dim sKanal As String
 
+  Dim sAdresse As String
+  Dim sPort As String
+  
     
     If InStr(TreeView_Aktion.Item.Key, "-") = 0 Then
  '     TreeView2.Add(TreeView_Raumliste.Item.Key, TreeView_Raumliste.Item.Text)
@@ -1743,6 +1748,34 @@ Public Sub TreeView_Aktion_Click()
             sKanal = Mid(sAusgang, Len(sHausCode) + 2, Len(sAusgang))
           
             Aktor_FunkSender(sBusNr, sHausCode, sKanal, "1")
+          Else If InStr(sUebertragung, "IO-Expander") <> 0 Then
+            sBusNr = Mid(sUebertragung, 13, Len(sUebertragung))
+            sAusgang = Mid(sAusgang, Len(sUebertragung) + 2, Len(sAusgang))
+            sAdresse = Mid(sAusgang, 9, 1)
+            'sAusgang = Mid(sAusgang, Len(sBusNr) + 2, Len(sAusgang))
+            'sHausCode = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
+            sKanal = Mid(sAusgang, InStr(sAusgang, "Kanal:") + 6, Len(sAusgang))
+          
+            If sAdresse = 0 Then sAdresse = 64
+            If sAdresse = 1 Then sAdresse = 66
+            If sAdresse = 2 Then sAdresse = 68
+            If sAdresse = 3 Then sAdresse = 70
+            If sAdresse = 4 Then sAdresse = 72
+            If sAdresse = 5 Then sAdresse = 74
+            If sAdresse = 6 Then sAdresse = 76
+            If sAdresse = 7 Then sAdresse = 78
+            
+            
+            If Val(sKanal) >= 8 Then
+              sPort = "B"
+              sKanal = sKanal - 7
+            Else
+              sPort = "A"
+              sKanal = sKanal
+            Endif
+            'Aktor_FunkSender(sBusNr, sHausCode, sKanal, "1")
+            'Button1_Click
+            MCP_Toggler(sAdresse, sPort, sKanal)
           End If
           
         Else
@@ -1758,6 +1791,34 @@ Public Sub TreeView_Aktion_Click()
             sKanal = Mid(sAusgang, Len(sHausCode) + 2, Len(sAusgang))
           
             Aktor_FunkSender(sBusNr, sHausCode, sKanal, "0")
+          Else If InStr(sUebertragung, "IO-Expander") <> 0 Then
+            sBusNr = Mid(sUebertragung, 13, Len(sUebertragung))
+            sAusgang = Mid(sAusgang, Len(sUebertragung) + 2, Len(sAusgang))
+            sAdresse = Mid(sAusgang, 9, 1)
+            'sAusgang = Mid(sAusgang, Len(sBusNr) + 2, Len(sAusgang))
+            'sHausCode = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
+            sKanal = Mid(sAusgang, InStr(sAusgang, "Kanal:") + 6, Len(sAusgang))
+          
+            If sAdresse = 0 Then sAdresse = 64
+            If sAdresse = 1 Then sAdresse = 66
+            If sAdresse = 2 Then sAdresse = 68
+            If sAdresse = 3 Then sAdresse = 70
+            If sAdresse = 4 Then sAdresse = 72
+            If sAdresse = 5 Then sAdresse = 74
+            If sAdresse = 6 Then sAdresse = 76
+            If sAdresse = 7 Then sAdresse = 78
+            
+            
+            If Val(sKanal) >= 8 Then
+              sPort = "B"
+              sKanal = sKanal - 7
+            Else
+              sPort = "A"
+              sKanal = sKanal
+            Endif
+            'Aktor_FunkSender(sBusNr, sHausCode, sKanal, "1")
+            'Button1_Click
+            MCP_Toggler(sAdresse, sPort, sKanal)
           End If
         Endif
      
@@ -1798,6 +1859,7 @@ End
 Public Sub Btn_ADD_BUS_Click()
 
   TreeView_IO_EXPANDER_List.Add(Spinbox_Bus_Nr.Value, "Bus " & Spinbox_Bus_Nr.Value)
+  Spinbox_Bus_Nr.Value += 1
 
 End
 
@@ -1909,8 +1971,8 @@ End
 
 Public Sub Button1_Click()
 
-  MCP_sendSPI(64, SPI_GPIOA, &X000000000) 
-  MCP_sendSPI(64, SPI_GPIOB, &X000000000) 
+'CP_sendSPI(64, SPI_GPIOA, &X000000000) 
+  MCP_sendSPI(64, SPI_GPIOB, &X100000000) 
   
 
 End
@@ -1922,14 +1984,42 @@ Public Sub Button4_Click()
 
 End
 
-Public Sub DrawingArea1_Draw()
-
+Public Sub MCP_Toggler(ByRef chipadresse As Integer, port As String, Kanal As Integer) 
   
+  Dim ergebniss As String
+  Dim i As Integer
+  Dim tmp_zustand As String
+  Dim tmp_val As String
+  Dim tmp_port As Integer
 
+  If UCase(port) = "A" Then
+    tmp_port = SPI_GPIOA
+  Else 
+   tmp_port = SPI_GPIOB
+Endif
+
+ ' tmp_zustand = MCP_readSPI_String(Chipfield[chip].SLAVE_ADDR, tmp_port)
+  tmp_zustand = MCP_readSPI_String(chipadresse, tmp_port)
+  
+  For i = 1 To 8 
+    tmp_val = Mid(tmp_zustand, i, 1) 
+      If i = Kanal Then
+        If Mid(tmp_zustand, Kanal, 1) = "1" Then
+          tmp_val = "0" 
+        Else
+          tmp_val = "1" 
+        End If
+        ergebniss = tmp_val & ergebniss
+      Else
+        ergebniss = tmp_val & ergebniss
+      Endif    
+  Next
+  MCP_sendSPI(chipadresse, tmp_port, Val("&X" & ergebniss)) 
 End
 
-Public Sub DrawingArea1_DblClick()
 
-  DrawingArea1.Hovere
+Public Sub Lbl_Main_Version_MouseDown()
+
+  
 
 End

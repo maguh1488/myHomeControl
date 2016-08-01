@@ -2,7 +2,7 @@
 # Compiled with Gambas 3.8.4
 Title=mini-Webserver GPIO FUNK IO-Expander
 Startup=FMain
-Version=0.0.11
+Version=0.0.16
 Component=gb.image
 Component=gb.cairo
 Component=gb.gui.qt
