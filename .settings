@@ -1,6 +1,5 @@
 [Breakpoints]
-Count=1
-Breakpoint[1]="FMain.1592"
+Count=0
 
 [DebugWindow]
 Count=0
@@ -47,11 +46,17 @@ Geometry=[995,50,356,630]
 [DebugWindow/Raumliste.TreeView1.Selection]
 Geometry=[995,50,356,630]
 
+[DebugWindow/TreeView_Aktion]
+Geometry=[-2,36,224,280]
+
 [DebugWindow/TreeView_IO_EXPANDER_List]
 Geometry=[-2,36,626,280]
 
 [DebugWindow/TreeView_IO_EXPANDER_List.Item]
 Geometry=[12,50,626,280]
+
+[DebugWindow/TreeView_Raumliste.Item]
+Geometry=[-2,36,224,280]
 
 [DebugWindow/WEB_cmbWebServerMaxClient]
 Geometry=[-1,35,224,280]
@@ -66,9 +71,9 @@ Geometry=[-2,36,224,280]
 Path="mini-Webserver_GPIO_FUNK.gambas"
 
 [OpenFile]
-Active=2
+Active=1
 File[1]=".src/FMain.form"
-File[2]=".src/FMain.class:97.1650"
+File[2]=".src/FMain.class:2.2022"
 Fold[2]=[403,500,736]
 Count=4
 File[3]=".src/Raumliste.form"

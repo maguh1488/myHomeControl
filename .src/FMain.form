@@ -99,6 +99,7 @@
         { Frame4 Frame
           MoveScaled(2,10,18,9)
           Font = Font["Bold,10"]
+          Background = &H2F53BF&
           Foreground = &HFFFF00&
           Text = ("Port A:")
           { Rb_IO_EXPANDER_PORT_A_Modus_Eingang RadioButton
@@ -118,6 +119,7 @@
         { Frame5 Frame
           MoveScaled(2,20,18,9)
           Font = Font["Bold,10"]
+          Background = &H2F53BF&
           Foreground = &HFFFF00&
           Text = ("Port B:")
           { Rb_IO_EXPANDER_PORT_B_Modus_Eingang RadioButton
@@ -256,7 +258,7 @@
     Index = 1
     Text = ("")
     { !TreeView_Raumliste TreeView
-      MoveScaled(92,1,65,49)
+      MoveScaled(92,1,66,63)
       #Public = True
       Font = Font["9"]
     }
@@ -266,7 +268,7 @@
       Text = ("Hinzufügen")
     }
     { btn_Teilnehmer_Add Button
-      MoveScaled(44,11,17,4)
+      MoveScaled(44,18,17,4)
       Font = Font["9"]
       Text = ("Hinzufügen")
     }
@@ -281,12 +283,12 @@
       Text = ("0")
     }
     { txtTeilnehmerName TextBox
-      MoveScaled(3,11,40,4)
+      MoveScaled(3,18,40,4)
       Font = Font["9"]
       Text = ("Teilnehmer ")
     }
     { DeviceID TextBox
-      MoveScaled(83,11,7,4)
+      MoveScaled(83,18,7,4)
       Font = Font["9"]
       Text = ("0")
     }
@@ -301,68 +303,70 @@
       Text = ("Raum ID:")
     }
     { TextLabel7 TextLabel
-      MoveScaled(3,9,25,3)
+      MoveScaled(3,16,25,3)
       Font = Font["Bold,10"]
       Text = ("Teilnehmer:")
     }
     { TextLabel8 TextLabel
-      MoveScaled(75,9,15,3)
+      MoveScaled(75,15,15,3)
       Font = Font["Bold,10"]
       Text = ("Teilnehmer ID:")
     }
     { Bnt_Raumliste_Speichern Button
-      MoveScaled(50,50,15,4)
+      MoveScaled(51,59,15,4)
       Font = Font["9"]
       Text = ("Speichern")
     }
     { txt_AttribItem TextBox
-      MoveScaled(92,51,47,4)
+      MoveScaled(92,65,48,4)
       Font = Font["9"]
       Text = ("1")
     }
     { TextLabel9 TextLabel
-      MoveScaled(83,52,8,3)
+      MoveScaled(84,66,8,3)
+      Font = Font["9"]
       Text = ("Attibut:")
     }
     { Bnt_Raumliste_Laden Button
-      MoveScaled(67,50,15,4)
+      MoveScaled(67,59,15,4)
       Font = Font["9"]
       Text = ("Laden")
     }
     { Button6 Button
-      MoveScaled(140,51,17,4)
+      MoveScaled(141,65,17,4)
+      Font = Font["9"]
       Text = ("Edit")
     }
     { Radio_SendeModus_GPIO RadioButton
-      MoveScaled(4,17,20,3)
+      MoveScaled(4,24,20,3)
       Font = Font["Bold,10"]
       Text = ("GPIO")
       Value = True
     }
     { Radio_SendeModus_FUNK RadioButton
-      MoveScaled(4,25,20,3)
+      MoveScaled(4,34,20,3)
       Font = Font["Bold,10"]
       Text = ("433 Mhz")
     }
     { txt_FUNK_HAUSCODE TextBox
-      MoveScaled(6,35,11,3)
+      MoveScaled(6,44,11,3)
       Enabled = False
       Font = Font["9"]
       Text = ("10101")
     }
     { lbl_FUNK_HAUSCODE Label
-      MoveScaled(6,32,13,3)
+      MoveScaled(6,41,13,3)
       Font = Font["Bold,10"]
       Text = ("Haus Code")
     }
     { txt_FUNK_KANAL TextBox
-      MoveScaled(22,35,11,3)
+      MoveScaled(22,44,11,3)
       Enabled = False
       Font = Font["9"]
       Text = ("1")
     }
     { lbl_FUNK_KANAL Label
-      MoveScaled(22,32,13,3)
+      MoveScaled(22,41,13,3)
       Font = Font["Bold,10"]
       Text = ("Kanal 1-8:")
     }
@@ -372,63 +376,58 @@
       Text = ("Entfernen")
     }
     { btn_Teilnehmer_Delete Button
-      MoveScaled(62,11,15,4)
+      MoveScaled(62,18,15,4)
       Font = Font["9"]
       Text = ("Entfernen")
     }
     { Radio_SendeModus_IO_EXPANDER RadioButton
-      MoveScaled(4,40,20,3)
+      MoveScaled(4,50,20,3)
       Font = Font["Bold,10"]
       Text = ("IO-Expander")
     }
     { lbl_IO_EXPANDER_ADRESSE Label
-      MoveScaled(6,47,13,3)
+      MoveScaled(6,57,13,3)
       Font = Font["Bold,10"]
       Text = ("Adr 0-7:")
     }
     { lbl_IO_EXPANDER_KANAL Label
-      MoveScaled(22,47,13,3)
+      MoveScaled(22,57,13,3)
       Font = Font["Bold,10"]
       Text = ("Kanal 1-16:")
     }
-    { txt_IO_EXPANDER_ADRESSE TextBox
-      MoveScaled(6,54,11,3)
-      Enabled = False
-      Font = Font["9"]
-      Text = ("0")
-    }
     { txt_IO_EXPANDER_KANAL TextBox
-      MoveScaled(22,50,11,3)
+      MoveScaled(22,60,11,3)
       Enabled = False
       Font = Font["9"]
       Text = ("1")
     }
     { Combo_GPIO ComboBox
-      MoveScaled(6,20,29,3)
+      MoveScaled(6,27,29,3)
       Font = Font["9"]
     }
     { Combo_FUNK ComboBox
-      MoveScaled(6,28,29,3)
+      MoveScaled(6,37,29,3)
       Enabled = False
       Font = Font["9"]
     }
     { Combo_IO_EXPANDER ComboBox
-      MoveScaled(6,43,29,3)
+      MoveScaled(6,53,29,3)
       Enabled = False
       Font = Font["9"]
     }
     { Combo_IO_EXPANDER_ADRESSE ComboBox
-      MoveScaled(6,50,15,3)
+      MoveScaled(6,60,15,3)
       Font = Font["9"]
     }
     Index = 2
     Text = ("")
     { TreeView_Aktion TreeView
-      MoveScaled(31,3,125,49)
+      MoveScaled(31,3,125,66)
       Font = Font["9"]
     }
     { Button2 Button
       MoveScaled(2,3,26,7)
+      Font = Font["9"]
       Text = ("Aktualisieren")
     }
     Index = 3
@@ -516,9 +515,6 @@
     { Button4 Button
       MoveScaled(56,58,22,6)
     }
-    { DrawingArea1 DrawingArea
-      MoveScaled(117,57,19,10)
-    }
     Index = 0
   }
   { TextBox1 TextBox
@@ -534,5 +530,10 @@
   { !DirBox1 DirBox
     MoveScaled(2,8,53,4)
     #Public = True
+  }
+  { Lbl_Main_Version Label
+    MoveScaled(66,2,18,4)
+    Font = Font["URW Chancery L,Bold,12"]
+    Text = ("v.0.0.16")
   }
 }
