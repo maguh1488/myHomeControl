@@ -534,6 +534,6 @@
   { Lbl_Main_Version Label
     MoveScaled(66,2,18,4)
     Font = Font["URW Chancery L,Bold,12"]
-    Text = ("v.0.0.16")
+    Text = ("v.0.0.18")
   }
 }

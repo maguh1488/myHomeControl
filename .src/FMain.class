@@ -523,6 +523,8 @@ Public Sub WEB_Post_Anfrage(ByRef sbuf As String)
    Dim sHausCode As String
    Dim sBusNr As String
    
+   Dim sAdresse As String
+   
    
    sExtension = ".gz"
     
@@ -572,6 +574,22 @@ Public Sub WEB_Post_Anfrage(ByRef sbuf As String)
               sKanal = Mid(sName, 1, Len(sName))
               
               Aktor_FunkSender(sBusNr, sHausCode, sKanal, zustand)
+            Endif
+            If InStr(sName, "IO-Expander") <> 0 Then
+              'sName kürzen 433Mhz: abschneiden (val1)
+              sName = Mid(sName, 13, Len(sName))
+              sBusNr = Mid(sName, 1, InStr(sName, ":") - 1)
+              
+              'sName kürzen Bus 1: abschneiden (val2)
+              sName = Mid(sName, Len(sBusNr) + 2, Len(sName))
+              sAdresse = Mid(sName, 9, InStr(sName, " ") - 9)
+              
+              'sName kürzen 10101: abschneiden (val3)
+              sName = Mid(sName, InStr(sName, "Kanal"), Len(sName))
+              sKanal = Mid(sName, 7, Len(sName))
+              
+              'Aktor_FunkSender(sBusNr, sHausCode, sKanal, zustand)
+              MCP_Toggler2(sBusNr, sAdresse, sKanal)
             Endif
           Else 
             geraeteID = sKey
@@ -1756,26 +1774,9 @@ Public Sub TreeView_Aktion_Click()
             'sHausCode = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
             sKanal = Mid(sAusgang, InStr(sAusgang, "Kanal:") + 6, Len(sAusgang))
           
-            If sAdresse = 0 Then sAdresse = 64
-            If sAdresse = 1 Then sAdresse = 66
-            If sAdresse = 2 Then sAdresse = 68
-            If sAdresse = 3 Then sAdresse = 70
-            If sAdresse = 4 Then sAdresse = 72
-            If sAdresse = 5 Then sAdresse = 74
-            If sAdresse = 6 Then sAdresse = 76
-            If sAdresse = 7 Then sAdresse = 78
-            
-            
-            If Val(sKanal) >= 8 Then
-              sPort = "B"
-              sKanal = sKanal - 7
-            Else
-              sPort = "A"
-              sKanal = sKanal
-            Endif
-            'Aktor_FunkSender(sBusNr, sHausCode, sKanal, "1")
+                        'Aktor_FunkSender(sBusNr, sHausCode, sKanal, "1")
             'Button1_Click
-            MCP_Toggler(sAdresse, sPort, sKanal)
+            MCP_Toggler2(sBusNr, sAdresse, sKanal)
           End If
           
         Else
@@ -1799,26 +1800,10 @@ Public Sub TreeView_Aktion_Click()
             'sHausCode = Mid(sAusgang, 1, InStr(sAusgang, ":") - 1)
             sKanal = Mid(sAusgang, InStr(sAusgang, "Kanal:") + 6, Len(sAusgang))
           
-            If sAdresse = 0 Then sAdresse = 64
-            If sAdresse = 1 Then sAdresse = 66
-            If sAdresse = 2 Then sAdresse = 68
-            If sAdresse = 3 Then sAdresse = 70
-            If sAdresse = 4 Then sAdresse = 72
-            If sAdresse = 5 Then sAdresse = 74
-            If sAdresse = 6 Then sAdresse = 76
-            If sAdresse = 7 Then sAdresse = 78
             
-            
-            If Val(sKanal) >= 8 Then
-              sPort = "B"
-              sKanal = sKanal - 7
-            Else
-              sPort = "A"
-              sKanal = sKanal
-            Endif
             'Aktor_FunkSender(sBusNr, sHausCode, sKanal, "1")
             'Button1_Click
-            MCP_Toggler(sAdresse, sPort, sKanal)
+            MCP_Toggler2(sBusNr, sAdresse, sKanal)
           End If
         Endif
      
@@ -1984,7 +1969,7 @@ Public Sub Button4_Click()
 
 End
 
-Public Sub MCP_Toggler(ByRef chipadresse As Integer, port As String, Kanal As Integer) 
+Public Sub MCP_Toggler3(ByRef chipadresse As Integer, port As String, Kanal As Integer) 
   
   Dim ergebniss As String
   Dim i As Integer
@@ -2016,7 +2001,51 @@ Endif
   Next
   MCP_sendSPI(chipadresse, tmp_port, Val("&X" & ergebniss)) 
 End
+Public Sub MCP_Toggler2(ByRef Bus As String, ByRef chipadresse As Integer, sKanal As Integer) 
+  
+  Dim ergebniss As String
+  Dim i As Integer
+  Dim tmp_zustand As String
+  Dim tmp_val As String
+  Dim sPort As Integer
 
+
+  If chipadresse = 0 Then chipadresse = 64
+  If chipadresse = 1 Then chipadresse = 66
+  If chipadresse = 2 Then chipadresse = 68
+  If chipadresse = 3 Then chipadresse = 70
+  If chipadresse = 4 Then chipadresse = 72
+  If chipadresse = 5 Then chipadresse = 74
+  If chipadresse = 6 Then chipadresse = 76
+  If chipadresse = 7 Then chipadresse = 78
+            
+            
+  If sKanal >= 8 Then
+    sPort = SPI_GPIOB
+    sKanal = sKanal - 7
+  Else
+    sPort = SPI_GPIOA
+    sKanal = sKanal
+  Endif
+
+ ' tmp_zustand = MCP_readSPI_String(Chipfield[chip].SLAVE_ADDR, tmp_port)
+  tmp_zustand = MCP_readSPI_String(chipadresse, sPort)
+  
+  For i = 1 To 8 
+    tmp_val = Mid(tmp_zustand, i, 1) 
+      If i = sKanal Then
+        If Mid(tmp_zustand, sKanal, 1) = "1" Then
+          tmp_val = "0" 
+        Else
+          tmp_val = "1" 
+        End If
+        ergebniss = tmp_val & ergebniss
+      Else
+        ergebniss = tmp_val & ergebniss
+      Endif    
+  Next
+  MCP_sendSPI(chipadresse, sPort, Val("&X" & ergebniss)) 
+End 
 
 Public Sub Lbl_Main_Version_MouseDown()
 
