@@ -73,8 +73,8 @@ Path="mini-Webserver_GPIO_FUNK.gambas"
 [OpenFile]
 Active=1
 File[1]=".src/FMain.form"
-File[2]=".src/FMain.class:2.2022"
-Fold[2]=[403,500,736]
+File[2]=".src/FMain.class:0.591"
+Fold[2]=[403,754]
 Count=4
 File[3]=".src/Raumliste.form"
 File[4]=".src/GrafikLoader.module:16.26"
